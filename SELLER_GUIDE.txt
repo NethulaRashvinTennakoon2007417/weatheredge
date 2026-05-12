@@ -1,0 +1,215 @@
+WEATHER EDGE ANALYZER — COMPLETE SETUP & OPERATIONS GUIDE
+==========================================================
+
+
+════════════════════════════════════════════════════════════
+  PART 1: ONE-TIME SETUP (do this once, never again)
+════════════════════════════════════════════════════════════
+
+STEP 1 — Install Python (if you don't have it)
+  Go to: https://python.org/downloads
+  Download latest version (3.11 or 3.12)
+  During install: CHECK "Add Python to PATH"
+  Verify: open CMD and type: python --version
+
+
+STEP 2 — Put the files in a folder on your PC
+  Create folder: C:\WeatherEdge\
+  Extract WeatherEdge_v1.0.0_FULL.zip into it.
+
+
+STEP 3 — Set YOUR secret key (CRITICAL)
+  Open CMD in C:\WeatherEdge\ and run:
+    python -c "import secrets; print(secrets.token_hex(32))"
+  Copy the output.
+  Open: app\license.py
+  Find SECRET_KEY = "CHANGE_THIS..."
+  Replace the value with your copied key.
+  Save the file.
+
+  ⚠ NEVER change this after you start selling.
+    It invalidates every code you've given out.
+
+
+STEP 4 — Replace @YourXHandle with your real handle
+  Find+replace in these files:
+    app\license.py, app\updater.py, README.txt,
+    START_WINDOWS.bat, START_MAC.sh
+
+
+STEP 5 — Set up GitHub Gist (for update notifications)
+  1. Go to gist.github.com (free account)
+  2. Filename: weather-edge-version.json
+  3. Content:
+       {
+         "version": "1.0.0",
+         "notes": "Initial release",
+         "required": false
+       }
+  4. Create public gist
+  5. Click "Raw" → copy that URL
+  6. Open app\updater.py
+  7. Paste URL into GIST_URL = "..."
+
+
+STEP 6 — Install PyInstaller
+  Open CMD and run:
+    pip install pyinstaller
+
+
+STEP 7 — Build the exe
+  Double-click: BUILD_EXE_WINDOWS.bat
+  Wait 1-3 minutes.
+  Output: dist\WeatherEdge.exe
+
+
+STEP 8 — Test it yourself first
+  Generate a test code:
+    python generate_code.py MYTEST 7
+  Double-click: dist\WeatherEdge.exe
+  Enter the code when prompted.
+  Browser opens to localhost:5000.
+  Test a city. If it works → ready to sell.
+
+
+════════════════════════════════════════════════════════════
+  PART 2: SELLING (every time someone pays)
+════════════════════════════════════════════════════════════
+
+1. Someone DMs you on X wanting access.
+
+2. Give them your crypto wallet. Wait for payment.
+
+3. Generate their code:
+     python generate_code.py
+     → Option 1
+     → Enter their X handle as ID
+     → Enter 31 (monthly) or 366 (yearly)
+   Terminal prints a ready-to-paste DM.
+
+4. Send them via DM:
+   - Their access code
+   - WeatherEdge.exe + README.txt (zipped)
+
+5. They double-click the exe, enter code, done.
+
+
+════════════════════════════════════════════════════════════
+  PART 3: RENEWALS
+════════════════════════════════════════════════════════════
+
+When code expires, app shows:
+  "Code expired. DM @YourHandle to renew."
+
+They DM you → confirm payment → run:
+  python generate_code.py @theirhandle 31
+
+Send them the new code. No new exe needed.
+Takes 60 seconds.
+
+
+════════════════════════════════════════════════════════════
+  PART 4: UPDATING THE SOFTWARE
+════════════════════════════════════════════════════════════
+
+STEP 1 — Make your code changes
+  Edit app\weather.py and/or app\templates\weather.html
+  Test: python launch.py
+
+
+STEP 2 — Bump the version number in TWO places
+  app\license.py  → APP_VERSION = "1.1.0"
+  app\updater.py  → CURRENT_VERSION = "1.1.0"
+
+  Guide:
+    1.0.0 → 1.0.1  bug fix
+    1.0.0 → 1.1.0  new feature
+    1.0.0 → 2.0.0  major overhaul
+
+
+STEP 3 — Rebuild the exe
+  Double-click: BUILD_EXE_WINDOWS.bat
+  Test with your own code.
+
+
+STEP 4 — Update your GitHub Gist
+  Edit gist to:
+    {
+      "version": "1.1.0",
+      "notes": "What you changed here",
+      "required": false
+    }
+
+  Every subscriber now sees on next launch:
+    "UPDATE AVAILABLE v1.0.0 → v1.1.0
+     DM @YourHandle to get it."
+
+
+STEP 5 — DM active subscribers the new exe
+  They replace old exe, double-click, done.
+  Same access code still works. No new code needed.
+
+
+STEP 6 — Force update (critical fixes only)
+  Set "required": true in gist.
+  Old version refuses to start until updated.
+  Use only for broken functionality.
+
+
+════════════════════════════════════════════════════════════
+  PART 5: MANAGING SUBSCRIBERS
+════════════════════════════════════════════════════════════
+
+  List all subscribers:
+    python generate_code.py → option 2
+
+  Validate a code (if someone says it's broken):
+    python generate_code.py → option 3
+
+  All records saved in: subscribers.json
+  Back this up periodically.
+
+
+════════════════════════════════════════════════════════════
+  PART 6: X GROWTH STRATEGY
+════════════════════════════════════════════════════════════
+
+Post before market closes:
+  "Atlanta: 52-53°F at 28% on PM. Our model says 68%.
+   +40% edge. [screenshot] ⚡"
+
+Post after it resolves:
+  "Called it. Atlanta hit 53°F. Edge captured. ⚡ [screenshot]"
+
+Build 5-10 public wins. Then post "DM for access."
+X bio: "Polymarket weather edge signals ⚡ | DM for access"
+
+
+════════════════════════════════════════════════════════════
+  QUICK REFERENCE
+════════════════════════════════════════════════════════════
+
+  New monthly code:    python generate_code.py @handle 31
+  New yearly code:     python generate_code.py @handle 366
+  Trial code:          python generate_code.py @handle 7
+  List subscribers:    python generate_code.py → 2
+  Check a code:        python generate_code.py → 3
+  Test app locally:    python launch.py
+  Build new exe:       BUILD_EXE_WINDOWS.bat
+
+
+════════════════════════════════════════════════════════════
+  WHAT TO SEND BUYERS vs KEEP PRIVATE
+════════════════════════════════════════════════════════════
+
+  SEND:
+    dist\WeatherEdge.exe
+    README.txt
+
+  KEEP PRIVATE (never share):
+    generate_code.py
+    subscribers.json
+    SELLER_GUIDE.txt
+    BUILD_EXE_WINDOWS.bat
+    WeatherEdge.spec
+    app\license.py (contains your SECRET_KEY)

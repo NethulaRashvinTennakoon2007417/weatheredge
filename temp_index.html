@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Weather Edge Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#060810;--s:#0a0d18;--c:#0f1220;--c2:#131628;
+  --b:rgba(255,255,255,0.06);--b2:rgba(255,255,255,0.11);
+  --t:#4a5878;--t2:#7a90b8;--br:#dde4f4;
+  --sky:#38bdf8;--skyg:rgba(56,189,248,0.10);
+  --sun:#fbbf24;--sung:rgba(251,191,36,0.10);
+  --green:#34d399;--greeng:rgba(52,211,153,0.10);
+  --red:#f87171;--redg:rgba(248,113,113,0.10);
+  --vc:#a78bfa;--vcg:rgba(167,139,250,0.10);
+  --wu:#fb923c;--wug:rgba(251,146,60,0.10);
+  --pm:#6366f1;--pmg:rgba(99,102,241,0.12);
+  --mono:'DM Mono',monospace;--display:'Syne',sans-serif;
+}
+body.light{
+  --bg:#f1f5fb;--s:#fff;--c:#fff;--c2:#f5f8ff;
+  --b:rgba(0,0,0,0.06);--b2:rgba(0,0,0,0.12);
+  --t:#8fa3c0;--t2:#3a5070;--br:#0a1628;
+  --sky:#0284c7;--skyg:rgba(2,132,199,0.08);
+  --sun:#b45309;--sung:rgba(180,83,9,0.08);
+  --green:#059669;--greeng:rgba(5,150,105,0.08);
+  --red:#dc2626;--redg:rgba(220,38,38,0.08);
+  --vc:#7c3aed;--vcg:rgba(124,58,237,0.08);
+  --wu:#ea580c;--wug:rgba(234,88,12,0.08);
+  --pm:#4f46e5;--pmg:rgba(79,70,229,0.08);
+}
+body.cream{
+  --bg:#e8dfd0;--s:#f0e8d8;--c:#f0e8d8;--c2:#e8dfc8;
+  --b:rgba(120,90,45,0.13);--b2:rgba(120,90,45,0.22);
+  --t:#9a7c58;--t2:#4a3420;--br:#1e1008;
+  --sky:#1d6fa4;--skyg:rgba(29,111,164,0.09);
+  --sun:#92580a;--sung:rgba(146,88,10,0.10);
+  --green:#2d7a4f;--greeng:rgba(45,122,79,0.09);
+  --red:#c0392b;--redg:rgba(192,57,43,0.09);
+  --vc:#6d3db5;--vcg:rgba(109,61,181,0.09);
+  --wu:#c05621;--wug:rgba(192,86,33,0.09);
+  --pm:#4338ca;--pmg:rgba(67,56,202,0.10);
+  /* Brown accent replaces blue for buttons in cream theme */
+  --accent:#7c4f1e;--accent-hover:#5c3812;--accent-fg:#fdf6ec;
+}
+body.forest{
+  --bg:#1a0e2e;--s:#1e1235;--c:#231540;--c2:#271848;
+  --b:rgba(255,160,80,0.08);--b2:rgba(255,160,80,0.16);
+  --t:#9b6e3a;--t2:#f0c080;--br:#ffe8c0;
+  --sky:#f0a040;--skyg:rgba(240,160,64,0.12);
+  --sun:#fbbf24;--sung:rgba(251,191,36,0.12);
+  --green:#86efac;--greeng:rgba(134,239,172,0.12);
+  --red:#f87171;--redg:rgba(248,113,113,0.10);
+  --vc:#c084fc;--vcg:rgba(192,132,252,0.10);
+  --wu:#fb923c;--wug:rgba(251,146,60,0.10);
+  --pm:#818cf8;--pmg:rgba(129,140,248,0.12);
+  --accent:#f0a040;--accent-hover:#e08020;--accent-fg:#1a0e2e;
+}
+body.forest::before{content:none}
+/* ── FOREST SCENE CANVAS ─────────────────────────────────── */
+#forest-bg{
+  display:none;position:fixed;inset:0;z-index:0;pointer-events:none;
+  width:100%;height:100%;
+}
+body.forest #forest-bg{display:block}
+/* Animated elements */
+@keyframes sunPulse{0%,100%{r:52;opacity:.95}50%{r:56;opacity:1}}
+@keyframes cloudDrift{0%{transform:translateX(0)}100%{transform:translateX(120px)}}
+@keyframes cloudDrift2{0%{transform:translateX(0)}100%{transform:translateX(-90px)}}
+@keyframes fogDrift{0%{transform:translateX(-3%)}100%{transform:translateX(3%)}}
+@keyframes fogDrift2{0%{transform:translateX(2%)}100%{transform:translateX(-2%)}}
+@keyframes leafSway{0%,100%{transform-origin:bottom center;transform:rotate(-1.5deg)}50%{transform-origin:bottom center;transform:rotate(1.5deg)}}
+@keyframes leafSway2{0%,100%{transform-origin:bottom center;transform:rotate(1deg)}50%{transform-origin:bottom center;transform:rotate(-2deg)}}
+@keyframes firefly{0%,100%{opacity:0;r:2.5}30%,70%{opacity:.9;r:3.5}50%{opacity:.5;r:2}}
+@keyframes fireflyMove{0%{cx:20%;cy:62%}25%{cx:22%;cy:59%}50%{cx:18%;cy:61%}75%{cx:21%;cy:63%}100%{cx:20%;cy:62%}}
+.forest-svg-cloud1{animation:cloudDrift 18s ease-in-out infinite alternate}
+.forest-svg-cloud2{animation:cloudDrift2 24s ease-in-out infinite alternate}
+.forest-fog1{animation:fogDrift 9s ease-in-out infinite alternate}
+.forest-fog2{animation:fogDrift2 12s ease-in-out infinite alternate}
+.forest-tree-sway{animation:leafSway 5s ease-in-out infinite}
+.forest-tree-sway2{animation:leafSway2 6s ease-in-out infinite}
+.ff{animation:firefly 3s ease-in-out infinite}
+.ff:nth-child(2){animation-delay:1.1s;animation-duration:3.7s}
+.ff:nth-child(3){animation-delay:2.3s;animation-duration:4.2s}
+.ff:nth-child(4){animation-delay:.7s;animation-duration:2.8s}
+.ff:nth-child(5){animation-delay:1.8s;animation-duration:5.1s}
+/* Forest UI overrides */
+body.forest .btn-sky{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)!important;font-weight:700}
+body.forest .btn-sky:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+body.forest .btn:hover{border-color:var(--accent);color:var(--accent)}
+body.forest .tb.active{color:var(--accent);border-bottom-color:var(--accent)}
+body.forest .tb:hover:not(.active){color:var(--accent)}
+body.forest .pulse{background:var(--accent)}
+body.forest select:focus,body.forest input:focus{border-color:var(--accent)}
+body.forest a{color:var(--accent)}
+body.forest .pm-link{background:rgba(240,160,64,0.08);border-color:rgba(240,160,64,0.3);color:var(--accent)}
+body.forest .pm-link:hover{border-color:var(--accent);box-shadow:0 0 14px rgba(240,160,64,0.2)}
+body.forest .theme-sel:hover{border-color:var(--accent);color:var(--accent)}
+body.forest .card{background:rgba(26,14,46,0.86);backdrop-filter:blur(5px)}
+body.forest .topbar{background:rgba(26,14,46,0.93);backdrop-filter:blur(8px)}
+body.forest .tabs{background:rgba(26,14,46,0.93)}
+html,body{height:100%;background:var(--bg);color:var(--t2);font-family:var(--mono);font-size:13px;transition:background .25s,color .25s}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 10% -10%,rgba(56,189,248,0.04),transparent 55%),radial-gradient(ellipse 60% 40% at 90% 110%,rgba(251,191,36,0.03),transparent 55%);pointer-events:none;z-index:0}
+body.light::before{background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(2,132,199,0.04),transparent 60%)}
+body.cream::before{background:radial-gradient(ellipse 70% 45% at 20% -10%,rgba(124,79,30,0.06),transparent 55%),radial-gradient(ellipse 50% 35% at 80% 110%,rgba(45,122,79,0.04),transparent 55%)}
+
+/* ── CREAM THEME: Brown buttons replace all blue accents ── */
+body.cream .btn-sky{background:var(--accent);border-color:var(--accent);color:var(--accent-fg) !important;font-weight:700}
+body.cream .btn-sky:hover{background:var(--accent-hover);border-color:var(--accent-hover);filter:none}
+body.cream .btn:hover{border-color:var(--accent);color:var(--accent)}
+body.cream .tb.active{color:var(--accent);border-bottom-color:var(--accent)}
+body.cream .tb:hover:not(.active){color:var(--accent)}
+body.cream .pulse{background:var(--accent)}
+body.cream select:focus,body.cream input:focus{border-color:var(--accent)}
+body.cream a{color:var(--accent)}
+body.cream .pm-link{background:rgba(124,79,30,0.1);border-color:rgba(124,79,30,0.3);color:var(--accent)}
+body.cream .pm-link:hover{border-color:var(--accent);box-shadow:0 0 14px rgba(124,79,30,0.15)}
+body.cream .theme-sel:hover{border-color:var(--accent);color:var(--accent)}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden;position:relative;z-index:1}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;padding:0 22px;height:50px;border-bottom:1px solid var(--b);flex-shrink:0;gap:12px}
+.logo{font-family:var(--display);font-size:16px;color:var(--br);letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--sky);animation:pulse 2.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(56,189,248,.5)}50%{box-shadow:0 0 0 5px rgba(56,189,248,0)}}
+.sub{font-size:10px;color:var(--t);letter-spacing:.1em;text-transform:uppercase}
+.tr{margin-left:auto;display:flex;align-items:center;gap:10px}
+.btn{font-family:var(--mono);font-size:12px;font-weight:500;padding:6px 14px;border-radius:6px;border:1px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer;transition:all .18s}
+.btn:hover{border-color:var(--sky);color:var(--sky)}
+.btn-sky{background:var(--sky);border-color:var(--sky);color:#000;font-weight:700}
+.btn-sky:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+/* Theme cycle selector */
+.theme-sel{font-family:var(--mono);font-size:11px;font-weight:500;padding:5px 10px;border-radius:6px;border:1px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer;transition:all .18s;appearance:none;-webkit-appearance:none;text-align:center;min-width:80px}
+.theme-sel:hover{border-color:var(--sky);color:var(--sky)}
+/* City clock */
+.city-clock{display:flex;flex-direction:column;align-items:flex-end;gap:1px;opacity:0;transition:opacity .3s;pointer-events:none}
+.city-clock.visible{opacity:1}
+.clock-time{font-family:var(--display);font-size:17px;font-weight:700;color:var(--br);letter-spacing:.04em;line-height:1}
+.clock-date{font-size:9px;color:var(--t2);letter-spacing:.06em;text-transform:uppercase;line-height:1}
+.clock-tz{font-size:9px;color:var(--t);letter-spacing:.04em;line-height:1;margin-top:1px}
+
+/* ── TABS ── */
+.tabs{display:flex;border-bottom:1px solid var(--b);flex-shrink:0;padding:0 22px;gap:2px}
+.tb{font-size:11px;font-weight:500;padding:8px 14px;border:none;background:transparent;color:var(--t);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .18s;font-family:var(--mono);letter-spacing:.02em}
+.tb.active{color:var(--sky);border-bottom-color:var(--sky)}
+.tb:hover:not(.active){color:var(--t2)}
+.tb-badge{font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:5px;background:var(--greeng);color:var(--green);border:1px solid rgba(52,211,153,.3)}
+
+/* ── CONTROLS ── */
+.controls{padding:10px 22px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;border-bottom:1px solid var(--b);flex-shrink:0}
+.cg{display:flex;flex-direction:column;gap:4px}
+.cl{font-size:9px;color:var(--t);letter-spacing:.1em;text-transform:uppercase;font-weight:500}
+select,input[type=date],input[type=number]{background:var(--c);border:1px solid var(--b2);color:var(--br);font-family:var(--mono);font-size:12px;padding:6px 11px;border-radius:6px;outline:none;transition:border-color .18s}
+select:focus,input:focus{border-color:var(--sky)}
+select option{background:#0a0d18}
+body.light select option{background:#fff}
+body.cream select option{background:#fdf8f0}
+.pm-link-bar{margin-left:auto;display:flex;align-items:center;gap:8px}
+.pm-link{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:6px;border:1px solid rgba(99,102,241,.3);background:var(--pmg);color:var(--pm);font-size:11px;font-weight:600;text-decoration:none;transition:all .18s;white-space:nowrap}
+.pm-link:hover{border-color:var(--pm);box-shadow:0 0 14px var(--pmg)}
+.pm-link-ghost{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:6px;border:1px dashed var(--b2);color:var(--t);font-size:11px;text-decoration:none;transition:all .18s}
+.pm-link-ghost:hover{border-color:var(--sky);color:var(--sky)}
+
+/* ── CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:16px 22px;display:flex;flex-direction:column;gap:13px}
+.content::-webkit-scrollbar{width:3px}
+.content::-webkit-scrollbar-thumb{background:var(--b2)}
+.tab-content{display:none}
+.tab-content.active{display:flex;flex-direction:column;gap:13px}
+
+/* ── CARD ── */
+.card{background:var(--c);border:1px solid var(--b);border-radius:11px;overflow:hidden}
+.ch{padding:11px 16px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.ct{font-family:var(--display);font-size:13px;color:var(--br);font-weight:700;letter-spacing:.01em}
+.cb{padding:15px 16px}
+.badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px}
+a{color:var(--sky);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--b);border-radius:9px;overflow:hidden}
+@media(max-width:800px){.g2{grid-template-columns:1fr}}
+
+/* ── PREDICTOR CARD ── */
+.pred-hero{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;padding:18px;background:linear-gradient(135deg,rgba(56,189,248,0.06) 0%,rgba(52,211,153,0.04) 100%);border:1px solid rgba(56,189,248,0.15);border-radius:11px;margin-bottom:14px}
+.pred-temp{font-family:var(--display);font-size:52px;font-weight:800;line-height:1;letter-spacing:-.02em}
+.pred-range{font-size:12px;color:var(--t2);margin-top:4px}
+.pred-conf-ring{width:60px;height:60px;flex-shrink:0}
+.pred-meta{display:flex;flex-direction:column;gap:6px}
+.pred-meta-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t2)}
+.pred-meta-label{color:var(--t);min-width:110px;font-size:10px;letter-spacing:.05em;text-transform:uppercase}
+.method-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px}
+.method-card{background:var(--c2);border:1px solid var(--b);border-radius:8px;padding:10px 12px}
+.mc-label{font-size:10px;color:var(--t);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.mc-val{font-size:16px;font-weight:700;font-family:var(--display)}
+.mc-sub{font-size:10px;color:var(--t);margin-top:2px}
+.heating-viz{display:flex;gap:3px;align-items:flex-end;height:40px;margin-top:8px}
+.hbar{border-radius:2px 2px 0 0;min-width:8px;transition:height .4s}
+
+/* ── SOURCE TABLE ── */
+.src-table{width:100%;border-collapse:collapse}
+.src-table th{font-size:10px;color:var(--t);text-transform:uppercase;letter-spacing:.07em;font-weight:500;padding:7px 12px;text-align:left;border-bottom:1px solid var(--b)}
+.src-table td{padding:9px 12px;border-bottom:1px solid var(--b);font-size:12px;vertical-align:middle}
+.src-table tr:last-child td{border-bottom:none}
+.src-table tr:hover td{background:var(--c2)}
+.src-name{display:flex;align-items:center;gap:7px;font-weight:600}
+.scdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.src-badge{font-size:9px;padding:1px 6px;border-radius:4px;font-weight:600;margin-left:4px}
+.primary-src{background:var(--wug);color:var(--wu);border:1px solid rgba(251,146,60,.3)}
+.model-src{background:var(--skyg);color:var(--sky);border:1px solid rgba(56,189,248,.25)}
+.gap-up{background:var(--greeng);color:var(--green);border:1px solid rgba(52,211,153,.3);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px}
+.gap-dn{background:var(--redg);color:var(--red);border:1px solid rgba(248,113,113,.3);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px}
+
+/* ── EDGE ALERT ── */
+.edge-alert{border-radius:8px;padding:13px 15px;margin-bottom:13px}
+.ea-strong{background:var(--greeng);border:none}
+.ea-warn{background:var(--sung);border:none}
+.ea-neutral{background:var(--c2);border:1px solid var(--b)}
+.ea-t{font-family:var(--display);font-size:13px;font-weight:700;margin-bottom:5px}
+.ea-b{font-size:12px;line-height:1.75;color:var(--t2)}
+
+/* ── CHART ── */
+.chart-wrap{position:relative;height:220px}
+.chart-sub{height:85px;position:relative;margin-top:8px}
+.src-legend{display:flex;gap:12px;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500}
+.ldot{width:9px;height:9px;border-radius:50%}
+
+/* ── BRACKETS ── */
+.blist{display:flex;flex-direction:column;gap:4px}
+.brow{background:var(--c2);border:1px solid var(--b);border-radius:8px;padding:9px 12px;transition:all .18s}
+.brow.peak-row{border-color:var(--sun);background:var(--sung)}
+.btop{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.blabel{font-size:11px;font-weight:600;color:var(--br);min-width:74px}
+.bfpct{font-size:12px;font-weight:700;color:var(--sun)}
+.bpmpct{font-size:11px;color:var(--t);margin-left:auto}
+.bbar{height:4px;background:rgba(255,255,255,.05);border-radius:2px;margin-bottom:5px;overflow:visible;position:relative}
+.bbarfill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--sun),var(--wu))}
+.bedge{display:flex;align-items:center;gap:5px}
+.epill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px}
+.eyes{background:var(--greeng);color:var(--green);border:1px solid rgba(52,211,153,.25)}
+.eno{background:var(--redg);color:var(--red);border:1px solid rgba(248,113,113,.25)}
+.eskip{background:rgba(255,255,255,.03);color:var(--t);border:1px solid var(--b)}
+.enum{font-size:11px;font-weight:600}
+.epos{color:var(--green)}.eneg{color:var(--red)}.eneu{color:var(--t)}
+.stars{color:var(--sun);font-size:10px;letter-spacing:1px}
+.pmrow{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--b)}
+.pmrow:last-child{border-bottom:none}
+.pmlabel{font-size:11px;color:var(--t2);min-width:74px}
+.pminput{width:60px;text-align:center;padding:4px 7px;font-size:12px}
+
+/* ── INDICATOR CELLS ── */
+.sumcell{background:var(--c);padding:11px 13px}
+.scl{font-size:9px;color:var(--t);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.scv{font-size:15px;font-weight:700;color:var(--br);font-family:var(--display)}
+.scs{font-size:10px;color:var(--t);margin-top:2px}
+
+/* ── CONF BAR ── */
+.confbar{height:3px;background:rgba(255,255,255,.05);border-radius:2px;margin:5px 0}
+.confbarfill{height:100%;border-radius:2px;transition:width .7s}
+.cnotes{display:flex;flex-direction:column;gap:3px;margin-top:7px}
+.cnote{font-size:11px;display:flex;align-items:center;gap:5px}
+.cdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+
+/* ── HOURLY ── */
+.hscroll{overflow-x:auto;padding:3px 0}
+.hscroll::-webkit-scrollbar{height:2px}
+.hscroll::-webkit-scrollbar-thumb{background:var(--b2)}
+.hrow{display:flex;gap:4px;min-width:max-content}
+.hchip{background:var(--c2);border:1px solid var(--b);border-radius:7px;padding:6px 8px;min-width:48px;text-align:center}
+.hchip.peak{border-color:var(--sun);background:var(--sung)}
+.htime{font-size:9px;color:var(--t);margin-bottom:2px}
+.htemp{font-size:12px;font-weight:600;color:var(--br)}
+.hprecip{font-size:9px;color:#7eb8ff;margin-top:1px}
+
+/* ── RESOLUTION TIP ── */
+.rtip{background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.15);border-radius:7px;padding:10px 13px;font-size:11px;line-height:1.6;color:var(--t2)}
+
+/* ── SBOX ── */
+.sbox{border-radius:8px;padding:12px;margin-top:9px}
+.sbull{background:var(--greeng);border:1px solid rgba(52,211,153,.25)}
+.sbear{background:var(--redg);border:1px solid rgba(248,113,113,.25)}
+.sneu{background:var(--c2);border:1px solid var(--b)}
+.sbt{font-family:var(--display);font-size:13px;font-weight:700;margin-bottom:4px}
+.sbs{font-size:11px;line-height:1.7;color:var(--t2)}
+
+/* ── BASKET ── */
+.bic-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:7px}
+.bic{background:var(--c2);border:1px solid var(--b);border-radius:8px;padding:9px 11px}
+.bic-l{font-size:11px;font-weight:600;color:var(--br);margin-bottom:5px}
+.bic-fp{font-size:10px;color:var(--sun);margin-top:3px}
+.bcard{background:var(--c2);border:1px solid var(--b);border-radius:9px;padding:12px 14px;transition:all .18s}
+.bcard:hover{border-color:var(--sky);transform:translateY(-1px)}
+.bcard.s3{border-color:rgba(52,211,153,.4);background:var(--greeng)}
+.bcard.s2{border-color:rgba(251,191,36,.35);background:var(--sung)}
+.bctop{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap}
+.bc-r{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.bc-s3{background:var(--greeng);color:var(--green);border:1px solid rgba(52,211,153,.3)}
+.bc-s2{background:var(--sung);color:var(--sun);border:1px solid rgba(251,191,36,.3)}
+.bc-s1{background:var(--skyg);color:var(--sky);border:1px solid rgba(56,189,248,.3)}
+.bc-adj{font-size:10px;color:var(--t);padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.04);border:1px solid var(--b)}
+.bc-tags{display:flex;gap:4px;flex-wrap:wrap}
+.bc-tag{font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.06);color:var(--br);border:1px solid var(--b2)}
+.bc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--b);border-radius:6px;overflow:hidden;margin-top:7px}
+.bc-stat{background:var(--c);padding:6px 8px}
+.bc-sl{font-size:9px;color:var(--t);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px}
+.bc-sv{font-size:13px;font-weight:700;color:var(--br);font-family:var(--display)}
+.uround{background:var(--greeng);border:1px solid rgba(52,211,153,.3);border-radius:9px;padding:12px 14px;display:flex;align-items:center;gap:11px}
+
+.spinner{width:16px;height:16px;border:2px solid var(--b2);border-top-color:var(--sky);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-s{display:flex;align-items:center;gap:9px;padding:40px;justify-content:center;color:var(--t);font-size:12px}
+.empty-s{padding:48px;text-align:center;color:var(--t);font-size:12px;line-height:2.2}
+.ei{font-size:32px;margin-bottom:6px;opacity:.25;display:block}
+</style>
+</head>
+<body>
+<!-- Forest theme illustrated background (hidden unless forest theme) -->
+<svg id="forest-bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffe066" stop-opacity="1"/>
+      <stop offset="60%" stop-color="#ffb830" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#ff8c00" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="sunHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffcc44" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ff8c00" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a0e2e"/>
+      <stop offset="30%" stop-color="#4a1c5c"/>
+      <stop offset="60%" stop-color="#c05020"/>
+      <stop offset="85%" stop-color="#e8821a"/>
+      <stop offset="100%" stop-color="#f0a030"/>
+    </linearGradient>
+    <linearGradient id="mtnGrad1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6b3080"/>
+      <stop offset="100%" stop-color="#3d1555"/>
+    </linearGradient>
+    <linearGradient id="mtnGrad2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8b4090"/>
+      <stop offset="100%" stop-color="#5a2070"/>
+    </linearGradient>
+    <linearGradient id="meadowGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a7820"/>
+      <stop offset="100%" stop-color="#2d5010"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softBlur"><feGaussianBlur stdDeviation="3"/></filter>
+  </defs>
+
+  <!-- SKY gradient -->
+  <rect width="1440" height="900" fill="url(#skyGrad)"/>
+
+  <!-- SUN HALO -->
+  <circle cx="310" cy="190" r="120" fill="url(#sunHalo)" filter="url(#softBlur)"/>
+  <!-- SUN -->
+  <circle cx="310" cy="190" r="52" fill="url(#sunGrad)" filter="url(#glow)">
+    <animate attributeName="r" values="52;56;52" dur="4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.95;1;0.95" dur="4s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- CLOUDS -->
+  <g class="forest-svg-cloud1" opacity="0.35">
+    <ellipse cx="580" cy="120" rx="90" ry="28" fill="#f9d0a0"/>
+    <ellipse cx="520" cy="128" rx="60" ry="22" fill="#f9d0a0"/>
+    <ellipse cx="650" cy="130" rx="70" ry="20" fill="#f5c080"/>
+  </g>
+  <g class="forest-svg-cloud2" opacity="0.28">
+    <ellipse cx="1100" cy="90" rx="80" ry="24" fill="#e8b880"/>
+    <ellipse cx="1040" cy="98" rx="55" ry="18" fill="#e8b880"/>
+    <ellipse cx="1170" cy="98" rx="60" ry="18" fill="#d8a070"/>
+  </g>
+
+  <!-- MOUNTAINS BACK (dark purple) -->
+  <polygon points="0,580 180,300 360,580" fill="#3d1555" opacity="0.9"/>
+  <polygon points="120,580 350,260 580,580" fill="url(#mtnGrad1)" opacity="0.95"/>
+  <polygon points="350,580 600,230 860,580" fill="url(#mtnGrad2)" opacity="0.9"/>
+  <polygon points="600,580 900,280 1200,580" fill="#6b3080" opacity="0.85"/>
+  <polygon points="900,580 1150,320 1440,580" fill="#3d1555" opacity="0.9"/>
+  <polygon points="1100,580 1300,350 1440,580" fill="#5a2070" opacity="0.8"/>
+
+  <!-- TREE BACK ROW (dark orange/rust — large) -->
+  <!-- Tree B1 -->
+  <g class="forest-tree-sway">
+    <rect x="97" y="490" width="10" height="90" fill="#3d1f08" rx="3"/>
+    <ellipse cx="102" cy="460" rx="52" ry="58" fill="#c84018"/>
+    <ellipse cx="102" cy="445" rx="38" ry="42" fill="#e05020"/>
+  </g>
+  <!-- Tree B2 -->
+  <g class="forest-tree-sway2">
+    <rect x="217" y="470" width="12" height="100" fill="#3d1f08" rx="3"/>
+    <ellipse cx="223" cy="435" rx="60" ry="66" fill="#d03c10"/>
+    <ellipse cx="223" cy="415" rx="44" ry="48" fill="#e84c18"/>
+  </g>
+  <!-- Tree B3 -->
+  <g class="forest-tree-sway">
+    <rect x="357" y="460" width="11" height="110" fill="#3d1f08" rx="3"/>
+    <ellipse cx="362" cy="420" rx="55" ry="62" fill="#be3810"/>
+    <ellipse cx="362" cy="402" rx="40" ry="45" fill="#d84820"/>
+  </g>
+  <!-- Tree B4 -->
+  <g class="forest-tree-sway2">
+    <rect x="487" y="475" width="10" height="95" fill="#3d1f08" rx="3"/>
+    <ellipse cx="492" cy="440" rx="50" ry="57" fill="#c84018"/>
+    <ellipse cx="492" cy="422" rx="36" ry="42" fill="#e05c20"/>
+  </g>
+  <!-- Tree B5 -->
+  <g class="forest-tree-sway">
+    <rect x="627" y="465" width="12" height="105" fill="#3d1f08" rx="3"/>
+    <ellipse cx="633" cy="425" rx="58" ry="63" fill="#d03c10"/>
+    <ellipse cx="633" cy="405" rx="42" ry="47" fill="#e84818"/>
+  </g>
+  <!-- Tree B6 -->
+  <g class="forest-tree-sway2">
+    <rect x="777" y="458" width="11" height="112" fill="#3d1f08" rx="3"/>
+    <ellipse cx="782" cy="415" rx="54" ry="61" fill="#be3810"/>
+    <ellipse cx="782" cy="396" rx="39" ry="44" fill="#d04818"/>
+  </g>
+  <!-- Tree B7 -->
+  <g class="forest-tree-sway">
+    <rect x="907" y="470" width="10" height="100" fill="#3d1f08" rx="3"/>
+    <ellipse cx="912" cy="430" rx="50" ry="58" fill="#c84018"/>
+    <ellipse cx="912" cy="412" rx="36" ry="43" fill="#e05020"/>
+  </g>
+  <!-- Tree B8 -->
+  <g class="forest-tree-sway2">
+    <rect x="1047" y="462" width="12" height="108" fill="#3d1f08" rx="3"/>
+    <ellipse cx="1053" cy="420" rx="56" ry="62" fill="#d03c10"/>
+    <ellipse cx="1053" cy="400" rx="41" ry="46" fill="#e84c18"/>
+  </g>
+  <!-- Tree B9 -->
+  <g class="forest-tree-sway">
+    <rect x="1187" y="468" width="11" height="102" fill="#3d1f08" rx="3"/>
+    <ellipse cx="1192" cy="428" rx="53" ry="60" fill="#be3810"/>
+    <ellipse cx="1192" cy="409" rx="38" ry="44" fill="#d44818"/>
+  </g>
+  <!-- Tree B10 -->
+  <g class="forest-tree-sway2">
+    <rect x="1327" y="472" width="10" height="98" fill="#3d1f08" rx="3"/>
+    <ellipse cx="1332" cy="432" rx="49" ry="57" fill="#c84018"/>
+    <ellipse cx="1332" cy="415" rx="35" ry="41" fill="#e05020"/>
+  </g>
+
+  <!-- TREE FRONT ROW (varied — orange, yellow, green cactus-style) -->
+  <!-- Small yellow-orange tree -->
+  <g class="forest-tree-sway2">
+    <rect x="45" y="560" width="7" height="70" fill="#3d1f08" rx="2"/>
+    <ellipse cx="48" cy="530" rx="28" ry="36" fill="#f0a820"/>
+    <ellipse cx="48" cy="518" rx="20" ry="26" fill="#f8c030"/>
+  </g>
+  <!-- Cactus-style tree (like the green narrow ones in image) -->
+  <g class="forest-tree-sway">
+    <rect x="150" y="545" width="6" height="85" fill="#2a4a10" rx="2"/>
+    <ellipse cx="153" cy="518" rx="15" ry="32" fill="#3a6818"/>
+    <ellipse cx="153" cy="505" rx="11" ry="22" fill="#4a8020"/>
+  </g>
+  <!-- Orange round tree -->
+  <g class="forest-tree-sway2">
+    <rect x="265" y="535" width="9" height="95" fill="#3d1f08" rx="3"/>
+    <ellipse cx="270" cy="500" rx="38" ry="44" fill="#d84420"/>
+    <ellipse cx="270" cy="484" rx="28" ry="32" fill="#e85c28"/>
+  </g>
+  <!-- Yellow small tree -->
+  <g class="forest-tree-sway">
+    <rect x="380" y="548" width="7" height="82" fill="#3d1f08" rx="2"/>
+    <ellipse cx="383" cy="522" rx="26" ry="34" fill="#f0b820"/>
+    <ellipse cx="383" cy="509" rx="18" ry="24" fill="#f8d030"/>
+  </g>
+  <!-- Dark orange large -->
+  <g class="forest-tree-sway2">
+    <rect x="460" y="530" width="10" height="100" fill="#3d1f08" rx="3"/>
+    <ellipse cx="465" cy="492" rx="44" ry="50" fill="#c83810"/>
+    <ellipse cx="465" cy="474" rx="32" ry="36" fill="#e04c20"/>
+  </g>
+  <!-- Cactus green -->
+  <g class="forest-tree-sway">
+    <rect x="565" y="540" width="6" height="90" fill="#2a4a10" rx="2"/>
+    <ellipse cx="568" cy="512" rx="14" ry="30" fill="#386415"/>
+    <ellipse cx="568" cy="500" rx="10" ry="21" fill="#487a1c"/>
+  </g>
+  <!-- Orange mid -->
+  <g class="forest-tree-sway2">
+    <rect x="660" y="532" width="9" height="98" fill="#3d1f08" rx="3"/>
+    <ellipse cx="665" cy="494" rx="40" ry="47" fill="#d84018"/>
+    <ellipse cx="665" cy="477" rx="29" ry="34" fill="#ec5420"/>
+  </g>
+  <!-- Yellow-orange -->
+  <g class="forest-tree-sway">
+    <rect x="760" y="542" width="7" height="88" fill="#3d1f08" rx="2"/>
+    <ellipse cx="763" cy="516" rx="27" ry="35" fill="#f09818"/>
+    <ellipse cx="763" cy="503" rx="19" ry="25" fill="#f8b828"/>
+  </g>
+  <!-- Big orange -->
+  <g class="forest-tree-sway2">
+    <rect x="845" y="528" width="10" height="102" fill="#3d1f08" rx="3"/>
+    <ellipse cx="850" cy="488" rx="45" ry="51" fill="#c83810"/>
+    <ellipse cx="850" cy="470" rx="33" ry="37" fill="#e04818"/>
+  </g>
+  <!-- Cactus green -->
+  <g class="forest-tree-sway">
+    <rect x="955" y="537" width="6" height="93" fill="#2a4a10" rx="2"/>
+    <ellipse cx="958" cy="509" rx="14" ry="29" fill="#386415"/>
+    <ellipse cx="958" cy="497" rx="10" ry="20" fill="#487a1c"/>
+  </g>
+  <!-- Dark red-orange -->
+  <g class="forest-tree-sway2">
+    <rect x="1040" y="533" width="9" height="97" fill="#3d1f08" rx="3"/>
+    <ellipse cx="1045" cy="495" rx="41" ry="48" fill="#cc3810"/>
+    <ellipse cx="1045" cy="478" rx="30" ry="35" fill="#e04818"/>
+  </g>
+  <!-- Yellow tree -->
+  <g class="forest-tree-sway">
+    <rect x="1148" y="540" width="7" height="90" fill="#3d1f08" rx="2"/>
+    <ellipse cx="1151" cy="513" rx="29" ry="37" fill="#f0a020"/>
+    <ellipse cx="1151" cy="499" rx="21" ry="27" fill="#f8bc30"/>
+  </g>
+  <!-- Orange large -->
+  <g class="forest-tree-sway2">
+    <rect x="1245" y="526" width="10" height="104" fill="#3d1f08" rx="3"/>
+    <ellipse cx="1250" cy="486" rx="46" ry="52" fill="#d04018"/>
+    <ellipse cx="1250" cy="468" rx="34" ry="38" fill="#e45420"/>
+  </g>
+  <!-- Cactus small -->
+  <g class="forest-tree-sway">
+    <rect x="1355" y="544" width="6" height="86" fill="#2a4a10" rx="2"/>
+    <ellipse cx="1358" cy="517" rx="13" ry="28" fill="#386415"/>
+    <ellipse cx="1358" cy="505" rx="9" ry="19" fill="#488020"/>
+  </g>
+
+  <!-- PURPLE GROUND BAND (behind meadow — like image's purple shrubs) -->
+  <rect x="0" y="575" width="1440" height="55" fill="#5a2070" opacity="0.7" rx="0"/>
+  <ellipse cx="200" cy="582" rx="140" ry="22" fill="#6a2880" opacity="0.6"/>
+  <ellipse cx="700" cy="578" rx="200" ry="20" fill="#7a3490" opacity="0.55"/>
+  <ellipse cx="1200" cy="580" rx="160" ry="18" fill="#6a2880" opacity="0.6"/>
+
+  <!-- MEADOW (bright green, like reference image foreground) -->
+  <path d="M0,620 Q200,590 400,610 Q700,625 1000,605 Q1200,596 1440,615 L1440,900 L0,900 Z" fill="url(#meadowGrad)"/>
+  <!-- Meadow highlight -->
+  <path d="M0,640 Q300,625 600,635 Q900,645 1200,630 Q1350,625 1440,632 L1440,900 L0,900 Z" fill="#3a6015" opacity="0.8"/>
+
+  <!-- FOG STRIPES (like the reference image — horizontal dashes on meadow) -->
+  <g class="forest-fog1" opacity="0.55">
+    <rect x="60"  y="680" width="180" height="14" rx="7" fill="#a0d050" opacity="0.5"/>
+    <rect x="340" y="695" width="240" height="12" rx="6" fill="#90c040" opacity="0.45"/>
+    <rect x="680" y="685" width="160" height="13" rx="6" fill="#a0d050" opacity="0.5"/>
+    <rect x="940" y="700" width="200" height="11" rx="5" fill="#90c040" opacity="0.4"/>
+    <rect x="1220" y="688" width="150" height="13" rx="6" fill="#a0d050" opacity="0.45"/>
+  </g>
+  <g class="forest-fog2" opacity="0.45">
+    <rect x="150"  y="730" width="120" height="10" rx="5" fill="#88b838" opacity="0.45"/>
+    <rect x="480"  y="745" width="160" height="9"  rx="4" fill="#80b030" opacity="0.4"/>
+    <rect x="820"  y="735" width="140" height="10" rx="5" fill="#88b838" opacity="0.45"/>
+    <rect x="1100" y="748" width="110" height="9"  rx="4" fill="#80b030" opacity="0.4"/>
+    <rect x="30"   y="755" width="90"  height="8"  rx="4" fill="#88b838" opacity="0.35"/>
+    <rect x="1340" y="752" width="80"  height="8"  rx="4" fill="#80b030" opacity="0.35"/>
+  </g>
+
+  <!-- FIREFLIES (animating SVG circles) -->
+  <circle class="ff" cx="180" cy="590" r="3" fill="#ffe866" filter="url(#glow)"/>
+  <circle class="ff" cx="420" cy="605" r="2.5" fill="#ffe866" filter="url(#glow)"/>
+  <circle class="ff" cx="760" cy="598" r="3" fill="#ffe866" filter="url(#glow)"/>
+  <circle class="ff" cx="1050" cy="610" r="2.5" fill="#ffe866" filter="url(#glow)"/>
+  <circle class="ff" cx="1320" cy="595" r="3" fill="#ffe866" filter="url(#glow)"/>
+</svg>
+<div class="app">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo"><div class="pulse"></div>Weather Edge</div>
+  <div class="sub">Polymarket Analyzer</div>
+  <div class="tr">
+    <div class="city-clock" id="city-clock">
+      <div class="clock-time" id="clock-time">--:--:--</div>
+      <div class="clock-date" id="clock-date">--- -- ----</div>
+      <div class="clock-tz" id="clock-tz">---</div>
+    </div>
+    <select class="theme-sel" id="theme-sel" onchange="setTheme(this.value)">
+      <option value="dark">🌙 Dark</option>
+      <option value="cream">☕ Cream</option>
+      <option value="light">☀ Light</option>
+      <option value="forest">🌿 Forest</option>
+    </select>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tb active" onclick="switchTab('predictor',this)">🎯 Live High Predictor</button>
+  <button class="tb" onclick="switchTab('forecast',this)">📡 Forecast & Charts</button>
+  <button class="tb" onclick="switchTab('edge',this)">⚡ Edge Calculator</button>
+  <button class="tb" onclick="switchTab('basket',this)">🧺 Basket Builder</button>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="cg"><div class="cl">City</div>
+    <select id="city-select"><option value="">Select city...</option></select>
+  </div>
+  <div class="cg"><div class="cl">Date</div>
+    <input type="date" id="date-input"/>
+  </div>
+  <div class="cg" style="justify-content:flex-end">
+    <button class="btn btn-sky" id="analyze-btn" onclick="runAnalysis()">⟳ Analyze</button>
+  </div>
+  <div class="pm-link-bar" id="pm-link-bar">
+    <span style="font-size:10px;color:var(--t)">Sources: <span style="color:var(--wu)">●</span> WU <span style="color:var(--sky)">●</span> OM <span style="color:var(--green)">●</span> NWS <span style="color:var(--vc)">●</span> VC</span>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- ── TAB 1: LIVE HIGH PREDICTOR ── -->
+  <div class="tab-content active" id="tab-predictor">
+    <div class="empty-s" id="pred-empty">
+      <span class="ei">🎯</span>
+      Select a city &amp; date then click Analyze<br>
+      <span style="font-size:11px;color:var(--t)">Multi-method temperature predictor: heating curve + solar + ensemble + model consensus</span>
+    </div>
+    <div id="pred-content" style="display:none"></div>
+  </div>
+
+  <!-- ── TAB 2: FORECAST & CHARTS ── -->
+  <div class="tab-content" id="tab-forecast">
+    <div class="empty-s" id="fc-empty"><span class="ei">📡</span>Run an analysis first</div>
+    <div id="fc-content" style="display:none"></div>
+  </div>
+
+  <!-- ── TAB 3: EDGE CALCULATOR ── -->
+  <div class="tab-content" id="tab-edge">
+    <div class="empty-s" id="edge-empty"><span class="ei">⚡</span>Run an analysis first, then enter Polymarket odds here</div>
+    <div id="edge-content" style="display:none"></div>
+  </div>
+
+  <!-- ── TAB 4: BASKET BUILDER ── -->
+  <div class="tab-content" id="tab-basket">
+    <div class="empty-s" id="basket-empty"><span class="ei">🧺</span>Run an analysis first, then enter Polymarket prices in cents</div>
+    <div id="basket-content" style="display:none"></div>
+  </div>
+
+</div>
+</div>
+
+<script>
+let D = null; // current data
+let tempChart = null, precipChart = null;
+
+// ── Theme ──────────────────────────────────────────────────────────────────
+const THEMES = ['dark','cream','light','forest'];
+function setTheme(t) {
+  document.body.classList.remove('light','cream','forest');
+  if(t === 'light')       document.body.classList.add('light');
+  else if(t === 'cream')  document.body.classList.add('cream');
+  else if(t === 'forest') document.body.classList.add('forest');
+  localStorage.setItem('we-theme', t);
+  const sel = document.getElementById('theme-sel');
+  if(sel) sel.value = t;
+  if(tempChart && D) rebuildCharts(D);
+}
+// Init saved theme
+(function(){ setTheme(localStorage.getItem('we-theme') || 'dark'); })();
+
+// ── City Clock ──────────────────────────────────────────────────────────────
+let clockTz = null;
+let clockInterval = null;
+const CITY_TZ = {
+  'Atlanta':              'America/New_York',
+  'New York (LaGuardia)':'America/New_York',
+  'Miami':               'America/New_York',
+  'Chicago':             'America/Chicago',
+  'Dallas':              'America/Chicago',
+  'Seattle':             'America/Los_Angeles',
+  'London':              'Europe/London',
+  'Seoul':               'Asia/Seoul',
+  'Wellington':          'Pacific/Auckland',
+  'Buenos Aires':        'America/Argentina/Buenos_Aires',
+};
+const TZ_ABBR = {
+  'America/New_York':               'ET',
+  'America/Chicago':                'CT',
+  'America/Los_Angeles':            'PT',
+  'Europe/London':                  'GMT/BST',
+  'Asia/Seoul':                     'KST',
+  'Pacific/Auckland':               'NZST/NZDT',
+  'America/Argentina/Buenos_Aires': 'ART',
+};
+
+function startCityClockFor(cityName) {
+  const tz = CITY_TZ[cityName];
+  if(!tz) { stopCityClock(); return; }
+  clockTz = tz;
+  const clock = document.getElementById('city-clock');
+  if(clock) clock.classList.add('visible');
+  if(clockInterval) clearInterval(clockInterval);
+  tickClock();
+  clockInterval = setInterval(tickClock, 1000);
+}
+
+function stopCityClock() {
+  if(clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+  const clock = document.getElementById('city-clock');
+  if(clock) clock.classList.remove('visible');
+  clockTz = null;
+}
+
+function tickClock() {
+  if(!clockTz) return;
+  try {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { timeZone: clockTz, hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    const dateStr = now.toLocaleDateString('en-US', { timeZone: clockTz, weekday:'short', month:'short', day:'numeric', year:'numeric' });
+    const tzAbbr  = TZ_ABBR[clockTz] || clockTz.split('/').pop();
+    const te = document.getElementById('clock-time');
+    const de = document.getElementById('clock-date');
+    const ze = document.getElementById('clock-tz');
+    if(te) te.textContent = timeStr;
+    if(de) de.textContent = dateStr;
+    if(ze) ze.textContent = tzAbbr;
+  } catch(e) {}
+}
+
+// Start clock when city is selected
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('city-select');
+  if(sel) sel.addEventListener('change', e => {
+    if(e.target.value) startCityClockFor(e.target.value);
+    else stopCityClock();
+  });
+});
+
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+function switchTab(n,el){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tb').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+n).classList.add('active');
+  el.classList.add('active');
+  if(n==='forecast'&&D&&tempChart===null) setTimeout(()=>rebuildCharts(D),50);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+const today=new Date();
+document.getElementById('date-input').value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+fetch('/api/cities').then(r=>r.json()).then(resp=>{
+  const sel=document.getElementById('city-select');
+  const vo={'very high':0,'high':1,'medium':2,'low':3};
+  resp.cities.sort((a,b)=>(vo[a.volume]??9)-(vo[b.volume]??9));
+  const groups={'🌍 Top Liquidity':[],'🇺🇸 United States':[],'🌐 International':[]};
+  resp.cities.forEach(c=>{
+    if(c.volume==='very high') groups['🌍 Top Liquidity'].push(c);
+    else if(c.flag==='🇺🇸') groups['🇺🇸 United States'].push(c);
+    else groups['🌐 International'].push(c);
+  });
+  Object.entries(groups).forEach(([label,cities])=>{
+    if(!cities.length) return;
+    const og=document.createElement('optgroup'); og.label=label;
+    cities.forEach(c=>{
+      const o=document.createElement('option'); o.value=c.name;
+      o.textContent=`${c.flag} ${c.name} (${c.unit_symbol}${c.volume?' · '+c.volume+' vol':''})`;
+      if(c.name==='Atlanta') o.selected=true;
+      og.appendChild(o);
+    });
+    sel.appendChild(og);
+  });
+});
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const f1=n=>n!=null?Number(n).toFixed(1):'—';
+const fp=n=>n!=null?Number(n).toFixed(1)+'%':'—';
+function bk(l){return l.replace(/[^a-z0-9]/gi,'_')}
+function isDark(){return !document.body.classList.contains('light')}
+
+// Render bracket rows — works for both generated brackets and PM brackets
+// wu_peak: current observed high — used to eliminate impossible brackets
+// wu_is_realtime: only eliminate brackets if WU data is from a live station (not ERA5)
+function renderBracketRows(brackets, peak, sym, pmOdds, wu_peak, wu_is_realtime) {
+  // Only use wu_peak for bracket elimination if it's real-time station data.
+  // ERA5 reanalysis can have timezone/lag issues and should NOT eliminate brackets.
+  const obsHigh = (wu_peak != null && wu_is_realtime !== false) ? parseFloat(wu_peak) : null;
+
+  return (brackets||[]).map(b => {
+    const lo = b.lo != null ? parseFloat(b.lo) : -999;
+    const hi = b.hi != null ? parseFloat(b.hi) : Infinity;
+
+    // Bracket status based on observed high
+    let bracketStatus = 'normal';
+    if(obsHigh != null) {
+      if(hi <= obsHigh)                    bracketStatus = 'impossible_low';
+      else if(lo <= obsHigh && hi > obsHigh) bracketStatus = 'current';
+      else if(lo > obsHigh)                bracketStatus = 'possible_above';
+    }
+
+    const isImpossible = bracketStatus === 'impossible_low';
+    const isCurrent    = bracketStatus === 'current';
+    const isp = peak!=null && lo<=peak && (b.hi==null||peak<hi); // model peak bracket
+
+    // PM yes price: prefer embedded (from PM brackets), fallback to pmOdds map
+    const pmPct = b.pm_yes_price != null ? b.pm_yes_price
+                : (pmOdds ? pmOdds[b.label] : null);
+    const hasPm = pmPct != null;
+
+    const edge = (hasPm && !isImpossible)
+      ? Math.round((b.forecast_prob - pmPct) * 10) / 10 : null;
+
+    // Row background
+    let rowBg = '';
+    if(isImpossible)          rowBg = 'rgba(128,128,128,0.03)';
+    else if(isCurrent)        rowBg = 'rgba(56,189,248,0.08)';
+    else if(edge!=null && edge>=10)   rowBg = 'rgba(52,211,153,0.07)';
+    else if(edge!=null && edge<=-10)  rowBg = 'rgba(248,113,113,0.07)';
+
+    const edgeColor = isImpossible ? 'var(--t)'
+      : edge==null ? 'var(--t)' : edge>=10 ? 'var(--green)' : edge<=-10 ? 'var(--red)'
+      : edge>=5 ? '#6ee7b7' : edge<=-5 ? '#fca5a5' : 'var(--t)';
+
+    const edgeStr = isImpossible
+      ? '<span style="font-size:9px;opacity:.4">n/a</span>'
+      : edge!=null ? `${edge>0?'+':''}${edge}%` : '—';
+
+    // Action tag — never on impossible OR current high bracket (it's already winning/losing, not a trade)
+    let actionTag = '';
+    if(!isImpossible && !isCurrent && hasPm && edge!=null && Math.abs(edge)>=10) {
+      const [bg,col,lbl] = edge>0
+        ? ['rgba(52,211,153,0.2)','var(--green)','BUY YES']
+        : ['rgba(248,113,113,0.2)','var(--red)','AVOID'];
+      actionTag = `<span style="font-size:8px;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px;background:${bg};color:${col}">${lbl}</span>`;
+    }
+
+    // Status badge
+    let statusBadge = '';
+    if(isImpossible) {
+      statusBadge = `<span style="font-size:8px;padding:1px 5px;border-radius:3px;font-weight:600;margin-left:4px;background:rgba(128,128,128,0.1);color:var(--t)">ELIM</span>`;
+    } else if(isCurrent) {
+      statusBadge = `<span style="font-size:8px;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px;background:rgba(56,189,248,0.2);color:var(--sky)">● CURRENT HIGH</span>`;
+    } else if(isp && !isCurrent) {
+      statusBadge = `<span style="font-size:8px;padding:1px 4px;border-radius:3px;font-weight:700;margin-left:4px;background:var(--sung);color:var(--sun)">MODEL PEAK</span>`;
+    }
+
+    const rowOpacity       = isImpossible ? 'opacity:0.38;' : '';
+    const labelDecoration  = isImpossible ? 'text-decoration:line-through;' : '';
+    const barWidth         = isImpossible ? 0 : (b.forecast_prob || 0);
+    const pmLineHtml = (hasPm && !isImpossible)
+      ? `<div style="position:absolute;top:-2px;bottom:-2px;width:2.5px;border-radius:2px;background:var(--pm);left:${Math.min(pmPct,99)}%;box-shadow:0 0 4px var(--pm)"></div>` : '';
+
+    return `<div class="brow ${isCurrent?'peak-row':''}" id="br-${bk(b.label)}" style="background:${rowBg};${rowOpacity}">
+      <div style="display:grid;grid-template-columns:1fr 52px 52px 48px;align-items:center">
+        <span style="font-size:11px;font-weight:600;color:var(--br);display:flex;align-items:center;flex-wrap:wrap;gap:3px;padding-right:4px;${labelDecoration}">
+          ${b.label}${statusBadge}${actionTag}
+        </span>
+        <span style="text-align:right;padding-right:4px;font-size:12px;font-weight:700;color:${isImpossible?'var(--t)':'var(--sun)'}">
+          ${isImpossible ? '—' : fp(b.forecast_prob)}
+        </span>
+        <span style="text-align:right;padding-right:4px;font-size:12px;font-weight:700;color:${hasPm&&!isImpossible?'var(--pm)':'var(--t)'}">
+          ${hasPm&&!isImpossible ? fp(pmPct) : '—'}
+        </span>
+        <span style="text-align:right;font-size:11px;font-weight:700;color:${edgeColor}">${edgeStr}</span>
+      </div>
+      <div class="bbar" style="margin-top:5px;height:4px;position:relative">
+        <div class="bbarfill" style="width:${barWidth}%;height:100%;border-radius:2px;${isImpossible?'opacity:0.15':''}"></div>
+        ${pmLineHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Polymarket Live Odds — PM brackets become the source of truth ─────────────
+// The backend parses PM's exact label/boundaries and computes our forecast
+// probability on those same ranges. No fuzzy matching, no mismatch ever.
+let pmLiveLoaded = false;
+
+// Helper: show edge alert for biggest mispricing
+function _showEdgeAlert(brackets, wu_peak, wu_is_realtime) {
+  const obsHigh = (wu_peak != null && wu_is_realtime !== false) ? parseFloat(wu_peak) : null;
+  let bestEdge = null, bestBracket = null, bestFp = null, bestPm = null;
+  (brackets||[]).forEach(b => {
+    const lo = parseFloat(b.lo);
+    const hi = b.hi != null ? parseFloat(b.hi) : Infinity;
+    if(obsHigh != null) {
+      if(hi <= obsHigh) return;  // eliminated — temp already exceeded
+      if(lo <= obsHigh && hi > obsHigh) return;  // CURRENT HIGH — skip, already settled
+    }
+    if(b.pm_yes_price == null || b.forecast_prob == null) return;
+    const edge = Math.round((b.forecast_prob - b.pm_yes_price)*10)/10;
+    if(bestEdge == null || Math.abs(edge) > Math.abs(bestEdge)) {
+      bestEdge=edge; bestBracket=b.label; bestFp=b.forecast_prob; bestPm=b.pm_yes_price;
+    }
+  });
+  const alertEl = document.getElementById('live-gap-alert');
+  if(!alertEl) return;
+  if(bestEdge != null && Math.abs(bestEdge) >= 5) {
+    alertEl.style.display='block';
+    alertEl.className = bestEdge>0 ? 'edge-alert ea-strong' : 'edge-alert ea-warn';
+    alertEl.innerHTML = bestEdge>0
+      ? `<div class="ea-t" style="color:var(--green)">⚡ Edge Found: <strong>${bestBracket}</strong> underpriced on Polymarket</div><div class="ea-b">Our forecast: <strong>${fp(bestFp)}</strong> · PM price: <strong>${fp(bestPm)}</strong> · Edge: <strong style="color:var(--green)">+${bestEdge}%</strong> — <strong>BUY YES.</strong></div>`
+      : `<div class="ea-t" style="color:var(--sun)">⚠ Overpriced: <strong>${bestBracket}</strong></div><div class="ea-b">PM prices at <strong>${fp(bestPm)}</strong> vs our forecast <strong>${fp(bestFp)}</strong> — ${Math.abs(bestEdge)}% overpriced. Consider avoiding.</div>`;
+  } else {
+    alertEl.style.display='none';
+  }
+}
+
+// Helper: update the "Predicted bracket" callout using current D.brackets (PM brackets)
+function _updatePredictorBracket(d) {
+  const pred = d.predictor?.final_prediction ?? d.consensus_peak;
+  if(pred == null) return;
+  const brackets = d.brackets || [];
+  const predBracket = brackets.find(b => pred >= b.lo && (b.hi == null || pred < b.hi));
+  const el = document.getElementById('predicted-bracket-box');
+  if(!el) return;
+  if(!predBracket) { el.style.display='none'; return; }
+  const sym = d.unit_symbol;
+  const lo  = d.predictor?.range_lo ?? Math.round(pred - (d.predictor?.uncertainty ?? 2.5));
+  const hi  = d.predictor?.range_hi ?? Math.round(pred + (d.predictor?.uncertainty ?? 2.5));
+  el.style.display='flex';
+  el.innerHTML = `<span style="font-size:20px">🎯</span>
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--sun)">Predicted bracket: <strong>${predBracket.label}</strong></div>
+      <div style="font-size:11px;color:var(--t2);margin-top:2px">
+        Prediction ${Math.round(pred)}${sym} falls in this bracket · 
+        Forecast probability: <strong>${fp(predBracket.forecast_prob)}</strong> · 
+        Range: ${Math.round(lo)}–${Math.round(hi)}${sym} confidence interval
+      </div>
+    </div>`;
+}
+
+// Helper: apply PM brackets to the bracket list UI (both Edge tab and Predictor tab)
+function _applyPMBracketsToUI(pmBrackets, totalVol, marketCount) {
+  const pmOdds = {};
+  pmBrackets.forEach(b => { if(b.pm_yes_price != null) pmOdds[b.label] = b.pm_yes_price; });
+
+  const rendered = renderBracketRows(pmBrackets, D.consensus_peak, D.unit_symbol, pmOdds, D.wu_peak, D.wu_is_realtime);
+
+  // Update Edge Calculator tab (canonical)
+  const listEl = document.getElementById('main-blist');
+  if(listEl) {
+    const centEl = document.getElementById('bracket-center-label');
+    if(centEl) {
+      const peakHour = D.peak_hour_est;
+      const sigma    = D.bracket_sigma;
+      const ph_str   = peakHour ? (() => { const h = Math.floor(peakHour); const m = Math.round((peakHour-h)*60); const ap = h>=12?'PM':'AM'; return `${h>12?h-12:h}:${m.toString().padStart(2,'0')} ${ap}`; })() : null;
+      const sigStr   = sigma ? `σ=${sigma.toFixed(1)}${D.unit_symbol}` : '';
+      const ctrStr   = D.bracket_center != null ? `${D.bracket_center.toFixed(1)}${D.unit_symbol}` : (D.wu_peak ?? D.consensus_peak) + D.unit_symbol;
+      centEl.innerHTML = `Centered on: <strong style="color:var(--sky)">${ctrStr}</strong>`
+        + (ph_str ? ` <span style="color:var(--t);font-size:10px">peak ~${ph_str}</span>` : '')
+        + (sigStr ? ` <span style="color:var(--t);font-size:10px">${sigStr}</span>` : '')
+        + ` <span style="color:var(--pm);margin-left:8px">Polymarket · ${marketCount} markets · $${Math.round(totalVol/1000)}K vol</span>`;
+    }
+    listEl.innerHTML = rendered;
+  }
+
+  // Update Predictor tab bracket map too
+  const predListEl = document.getElementById('predictor-blist');
+  if(predListEl) predListEl.innerHTML = rendered;
+
+  const badge  = document.getElementById('pm-live-badge');
+  const legend = document.getElementById('pm-legend');
+  if(badge)  { badge.style.display='inline-block'; badge.textContent=`● LIVE · $${Math.round(totalVol/1000)}K vol`; }
+  if(legend) { legend.style.display='flex'; }
+
+  const btn    = document.getElementById('pm-load-btn');
+  const status = document.getElementById('pm-live-status');
+  if(btn)    { btn.textContent='↺ Refresh PM'; btn.disabled=false; }
+  if(status) status.innerHTML=`<span style="color:var(--pm)">✓ ${marketCount} PM brackets · $${Math.round(totalVol/1000)}K vol</span>`;
+
+  // Update predicted-bracket-box with PM bracket that matches our prediction
+  _updatePredictorBracket(D);
+  _showEdgeAlert(pmBrackets, D.wu_peak, D.wu_is_realtime);
+  pmLiveLoaded = true;
+}
+
+async function loadPMLive() {
+  if(!D) return;
+  const btn    = document.getElementById('pm-load-btn');
+  const status = document.getElementById('pm-live-status');
+
+  // If PM was already loaded during runAnalysis, just apply to UI without re-fetching
+  if(D.pm_loaded && D.brackets && D.brackets[0]?.pm_yes_price != null && !pmLiveLoaded) {
+    _applyPMBracketsToUI(D.brackets, D.pm_total_volume||0, D.brackets.length);
+    return;
+  }
+
+  if(btn)    { btn.textContent='⟳ Loading...'; btn.disabled=true; }
+  if(status) { status.innerHTML='<span style="color:var(--t)">⟳ fetching live Polymarket brackets...</span>'; }
+
+  try {
+    const center = D.bracket_center ?? D.wu_peak ?? D.consensus_peak ?? D.om_peak ?? 0;
+    const sigma  = D.bracket_sigma  ?? D.predictor?.uncertainty ?? 2.5;
+    const resp   = await fetch(`/api/pm_odds/${encodeURIComponent(D.city)}/${D.date}?center=${center}&sigma=${sigma}`);
+    const data   = await resp.json();
+
+    if(!data.ok) throw new Error(data.error || 'Market not listed yet');
+    if(!data.brackets?.length) throw new Error('No brackets returned');
+
+    // Replace D.brackets with PM's real brackets — source of truth
+    D.brackets = data.brackets;
+    D.pm_total_volume = data.total_volume;
+    D.pm_loaded = true;
+
+    _applyPMBracketsToUI(data.brackets, data.total_volume||0, data.market_count||data.brackets.length);
+
+  } catch(err) {
+    const msg = err.message || String(err);
+    if(status) status.innerHTML=`<span style="color:var(--red)">✗ ${msg} — <a href="${D.polymarket_url||'#'}" target="_blank" style="color:var(--pm)">open PM ↗</a></span>`;
+    if(btn)    { btn.textContent='↺ Retry PM'; btn.disabled=false; }
+    console.warn('PM load error:', err);
+  }
+}
+
+
+async function runAnalysis(){
+  const city=document.getElementById('city-select').value;
+  const date=document.getElementById('date-input').value;
+  if(!city||!date){alert('Select city and date');return;}
+  const btn=document.getElementById('analyze-btn');
+  btn.disabled=true; btn.textContent='Loading...';
+
+  // Loading states
+  ['pred','fc','edge','basket'].forEach(id=>{
+    const e=document.getElementById(id+'-empty');
+    const c=document.getElementById(id+'-content');
+    if(e){e.innerHTML=`<div class="loading-s"><div class="spinner"></div> Fetching all sources...</div>`;e.style.display='block';}
+    if(c) c.style.display='none';
+  });
+
+  try{
+    // 1. Fetch weather analysis
+    const resp = await fetch(`/api/weather/${encodeURIComponent(city)}/${date}`);
+    D = await resp.json();
+    if(D.error) throw new Error(D.error);
+
+    // 2. Fetch PM brackets with real center (now that we have weather data)
+    // This is a single call — no double-fetch, no center=0 problem
+    const center = D.bracket_center ?? D.wu_peak ?? D.consensus_peak ?? D.om_peak ?? 0;
+    const sigma  = D.bracket_sigma  ?? D.predictor?.uncertainty ?? 2.5;
+    try {
+      const pmResp = await fetch(
+        `/api/pm_odds/${encodeURIComponent(city)}/${date}?center=${center}&sigma=${sigma}`
+      );
+      if(pmResp.ok) {
+        const pmData = await pmResp.json();
+        if(pmData.ok && pmData.brackets && pmData.brackets.length > 0) {
+          D.brackets = pmData.brackets;         // PM brackets replace generated ones
+          D.pm_total_volume = pmData.total_volume;
+          D.pm_loaded = true;
+        }
+      }
+    } catch(pmErr) {
+      console.warn('PM fetch during analysis failed (non-fatal):', pmErr);
+    }
+
+    // Update Polymarket link bar
+    updatePmLink(D);
+
+    // Start city clock for selected city's timezone
+    startCityClockFor(city);
+
+    // Render with PM brackets already merged into D
+    renderPredictor(D);
+    renderForecast(D);
+    renderEdgeTab(D);
+    renderBasketTab(D);
+
+    ['pred','fc','edge','basket'].forEach(id=>{
+      const e=document.getElementById(id+'-empty');
+      const c=document.getElementById(id+'-content');
+      if(e) e.style.display='none';
+      if(c) c.style.display='block';
+    });
+    if(tempChart){tempChart.destroy();tempChart=null;}
+    if(precipChart){precipChart.destroy();precipChart=null;}
+
+    // Start WU auto-refresh (today only, every 5 min)
+    startWUAutoRefresh(D.city, D.date);
+
+    // Auto-load live Polymarket odds — runs in background, non-blocking
+    pmLiveLoaded = false;
+    setTimeout(() => loadPMLive(), 500);  // slight delay so UI renders first
+  }catch(e){
+    document.getElementById('pred-empty').innerHTML=`<div class="empty-s"><span class="ei">⚠</span>Error: ${e.message}</div>`;
+  }
+  btn.disabled=false; btn.textContent='⟳ Analyze';
+}
+
+// ── Polymarket Link Bar ────────────────────────────────────────────────────
+function updatePmLink(d){
+  const bar=document.getElementById('pm-link-bar');
+  const pmUrl=d.polymarket_url;
+  const pmSearch=d.polymarket_search_url;
+  const dt=new Date(d.date+'T12:00:00');
+  const label=dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+
+  let html=`<span style="font-size:10px;color:var(--t)">Sources: <span style="color:var(--wu)">●</span> WU <span style="color:var(--sky)">●</span> OM <span style="color:var(--green)">●</span> NWS <span style="color:var(--vc)">●</span> VC &nbsp;|&nbsp;</span>`;
+  if(pmUrl){
+    html+=`<a class="pm-link" href="${pmUrl}" target="_blank">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Polymarket: ${d.flag} ${d.city} · ${label}
+    </a>`;
+  }
+  html+=`<a class="pm-link-ghost" href="${pmSearch}" target="_blank">🔍 Search</a>`;
+  bar.innerHTML=html;
+}
+
+// ── RENDER PREDICTOR TAB ──────────────────────────────────────────────────
+function renderPredictor(d){
+  const p=d.predictor||{};
+  const sym=d.unit_symbol;
+  if(!p.available){
+    document.getElementById('pred-content').innerHTML=`<div class="card"><div class="cb" style="color:var(--t);font-size:12px;padding:30px;text-align:center">⚠ Predictor unavailable: ${p.reason||'No data'}</div></div>`;
+    return;
+  }
+
+  const pred=p.final_prediction;
+  const lo=p.lower_bound, hi=p.upper_bound;
+  const conf=p.confidence;
+
+  // Color by confidence
+  const tempColor=conf>=80?'var(--green)':conf>=60?'var(--sun)':'var(--red)';
+  const confColor=conf>=80?'var(--green)':conf>=60?'var(--sun)':'var(--red)';
+
+  // Confidence arc SVG
+  const pct=conf/100;
+  const r=24,cx=30,cy=30,stroke=5;
+  const circ=2*Math.PI*r;
+  const dash=pct*circ;
+  const confSvg=`<svg class="pred-conf-ring" viewBox="0 0 60 60">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="${stroke}"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${confColor}" stroke-width="${stroke}"
+      stroke-dasharray="${dash} ${circ}" stroke-dashoffset="${circ/4}" stroke-linecap="round"
+      transform="rotate(-90 ${cx} ${cy})"/>
+    <text x="${cx}" y="${cy+1}" text-anchor="middle" dominant-baseline="middle" fill="${confColor}" font-size="11" font-weight="700" font-family="DM Mono,monospace">${conf}%</text>
+  </svg>`;
+
+  // Method cards
+  const methodHtml=`
+    <div class="method-row">
+      <div class="method-card">
+        <div class="mc-label">🌐 Model Forecast</div>
+        <div class="mc-val" style="color:var(--sky)">${p.model_peak!=null?Math.round(p.model_peak)+sym:'—'}</div>
+        <div class="mc-sub">Open-Meteo ECMWF/GFS peak</div>
+      </div>
+      <div class="method-card ${p.method2_available?'':''}">
+        <div class="mc-label">📈 Heating Curve ${p.method2_available?'':'(future date)'}</div>
+        <div class="mc-val" style="color:var(--green)">${p.extrapolated_peak!=null?Math.round(p.extrapolated_peak)+sym:'—'}</div>
+        <div class="mc-sub">${p.method2_available?(p.hours_remaining>0?`${f1(p.hours_remaining)}h to peak · ${f1(p.heating_rate)}${sym}/hr`:'Past peak hour'):'Same-day only'}</div>
+      </div>
+      <div class="method-card">
+        <div class="mc-label">🎲 Ensemble Mean</div>
+        <div class="mc-val" style="color:var(--vc)">${p.ensemble_peak!=null?Math.round(p.ensemble_peak)+sym:'—'}</div>
+        <div class="mc-sub">${p.ensemble_spread!=null?`±${f1(p.ensemble_spread)}${sym} spread`:'ECMWF ensemble'}</div>
+      </div>
+    </div>`;
+
+  // Live conditions row
+  const liveHtml=p.is_today&&p.current_temp!=null?`
+    <div class="card" style="margin-bottom:13px">
+      <div class="ch"><div class="ct">📍 Current Live Conditions</div><span style="font-size:10px;color:var(--t)">as of now at station</span></div>
+      <div class="cb">
+        <div class="g4">
+          <div class="sumcell"><div class="scl">Current Temp</div><div class="scv" style="color:var(--sun)">${Math.round(p.current_temp)}${sym}</div><div class="scs">live reading</div></div>
+          <div class="sumcell"><div class="scl">Morning Low</div><div class="scv">${p.morning_low!=null?Math.round(p.morning_low)+sym:'—'}</div><div class="scs">today's baseline</div></div>
+          <div class="sumcell"><div class="scl">Heating Rate</div><div class="scv" style="color:var(--green)">${p.heating_rate!=null?f1(p.heating_rate)+sym+'/hr':'—'}</div><div class="scs">current rise rate</div></div>
+          <div class="sumcell"><div class="scl">Hours to Peak</div><div class="scv" style="color:${p.hours_remaining>0?'var(--sky)':'var(--t2)'}">${p.hours_remaining!=null?(p.hours_remaining>0?f1(p.hours_remaining)+'h':'Past peak'):'—'}</div><div class="scs">~2:30 PM local</div></div>
+        </div>
+        <div style="font-size:11px;color:var(--t2);margin-top:10px;display:flex;gap:16px;flex-wrap:wrap">
+          <span>☁ Cloud cover: <strong style="color:var(--br)">${p.current_cloud!=null?p.current_cloud+'%':'—'}</strong></span>
+          <span>💨 Wind: <strong style="color:var(--br)">${p.current_wind!=null?f1(p.current_wind)+' mph':'—'}</strong></span>
+          <span>💧 Dew point: <strong style="color:var(--br)">${p.current_dew!=null?Math.round(p.current_dew)+sym:'—'}</strong></span>
+        </div>
+      </div>
+    </div>`:
+    `<div class="rtip" style="margin-bottom:13px">
+      📅 <strong>Future date</strong> — heating curve extrapolation not available yet. 
+      Prediction uses model forecast + ensemble mean. 
+      Come back on the day for real-time live extrapolation.
+    </div>`;
+
+  // Which bracket this prediction falls in — placeholder, updated by _updatePredictorBracket after PM loads
+  const predBracket = (d.brackets||[]).find(b=>pred>=b.lo&&(b.hi==null||pred<b.hi));
+  const bracketHtml = `<div id="predicted-bracket-box" style="display:${predBracket?'flex':'none'};align-items:center;gap:10px;padding:12px 14px;background:var(--sung);border:1px solid rgba(251,191,36,.25);border-radius:8px;margin-top:13px">
+      <span style="font-size:20px">🎯</span>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--sun)">Predicted bracket: <strong>${predBracket?.label||'—'}</strong></div>
+        <div style="font-size:11px;color:var(--t2);margin-top:2px">
+          Prediction ${Math.round(pred)}${sym} falls in this bracket · 
+          Forecast probability: <strong>${fp(predBracket?.forecast_prob)}</strong> · 
+          Range: ${Math.round(lo)}–${Math.round(hi)}${sym} confidence interval
+        </div>
+      </div>
+    </div>`;
+
+  // Key corrections applied
+  const correctionsHtml=p.is_today&&p.method2_available?`
+    <div class="card" style="margin-top:0">
+      <div class="ch"><div class="ct">🔧 Heating Curve Corrections Applied</div></div>
+      <div class="cb">
+        <div style="font-size:12px;color:var(--t2);line-height:1.9">
+          The extrapolated peak factors in atmospheric corrections that models often miss:<br>
+          <span style="color:var(--sky)">● Cloud factor</span> — ${p.current_cloud!=null?`${p.current_cloud}% cloud cover reduces heating by ~${Math.round(p.current_cloud*0.4)}%`:'applied'}<br>
+          <span style="color:var(--green)">● Wind factor</span> — ${p.current_wind!=null?`${f1(p.current_wind)} mph ${p.current_wind>10?'reduces':(p.current_wind>15?'significantly reduces':'minimal effect on')} peak`:'applied'}<br>
+          <span style="color:var(--vc)">● Dew point factor</span> — ${p.current_dew!=null?`${Math.round(p.current_dew)}${sym} dew point ${p.current_dew>(d.unit==='celsius'?13:55)?'limits heating (humid)':'allows strong heating (dry)'}`:'applied'}<br>
+          <span style="color:var(--sun)">● Heating taper</span> — rate slows by ~30% in final hour before peak (sinusoidal decay)
+        </div>
+      </div>
+    </div>`:'';
+
+  document.getElementById('pred-content').innerHTML=`
+    <div class="g2">
+      <div style="display:flex;flex-direction:column;gap:13px">
+        ${liveHtml}
+        <div class="card">
+          <div class="ch">
+            <div class="ct">🌡 Predicted Daily High</div>
+            <span class="badge" style="background:var(--skyg);color:var(--sky);border:1px solid rgba(56,189,248,.2)">${d.days_out===0?'Today':d.days_out===1?'Tomorrow':`In ${d.days_out} days`}</span>
+          </div>
+          <div class="cb">
+            <div class="pred-hero">
+              <div>
+                <div class="pred-temp" style="color:${tempColor}">${Math.round(pred)}${sym}</div>
+                <div class="pred-range" style="color:var(--t2)">Range: ${Math.round(lo)}–${Math.round(hi)}${sym}</div>
+                <div style="font-size:10px;color:var(--t);margin-top:4px">±${f1(p.uncertainty)}${sym} uncertainty · peaks ~${p.peak_time_estimate}</div>
+              </div>
+              <div class="pred-meta">
+                ${p.model_peak!=null?`<div class="pred-meta-row"><span class="pred-meta-label">Model forecast:</span><span style="color:var(--sky);font-weight:600">${Math.round(p.model_peak)}${sym}</span></div>`:''}
+                ${p.extrapolated_peak!=null?`<div class="pred-meta-row"><span class="pred-meta-label">Live extrapolation:</span><span style="color:var(--green);font-weight:600">${Math.round(p.extrapolated_peak)}${sym}</span></div>`:''}
+                ${p.ensemble_peak!=null?`<div class="pred-meta-row"><span class="pred-meta-label">Ensemble mean:</span><span style="color:var(--vc);font-weight:600">${Math.round(p.ensemble_peak)}${sym}</span></div>`:''}
+                ${d.wu_peak!=null
+                  ? `<div class="pred-meta-row"><span class="pred-meta-label">WU current high:</span>
+                     <span id="pred-wu-cell" style="color:${d.wu_is_realtime?'var(--wu)':'var(--sun)'};font-weight:600">${Math.round(d.wu_peak)}${sym}${!d.wu_is_realtime?' ⚠':''}</span>
+                     ${!d.wu_is_realtime?`<span style="color:var(--sun);font-size:9px">ERA5 estimate</span>`:''}
+                     </div>`
+                  : `<div class="pred-meta-row"><span class="pred-meta-label">WU current high:</span>
+                     <span id="pred-wu-cell" style="color:var(--t);font-size:11px">⏳ Station data not yet received — check back after ${(() => { const ph=d.peak_hour_est||14.5; const h=Math.floor(ph); const m=Math.round((ph-h)*60); const ap=h>=12?'PM':'AM'; return `${h>12?h-12:h}:${m.toString().padStart(2,'0')} ${ap}`; })()}</span>
+                     </div>`
+                }
+              </div>
+              ${confSvg}
+            </div>
+            ${methodHtml}
+            ${bracketHtml}
+          </div>
+        </div>
+        ${correctionsHtml}
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:13px">
+        <!-- How to use this for betting -->
+        <div class="card">
+          <div class="ch"><div class="ct">💡 How to Use This Prediction</div></div>
+          <div class="cb" style="font-size:12px;line-height:1.9;color:var(--t2)">
+            <p><strong style="color:var(--br)">Step 1:</strong> Check the predicted bracket above — that's where models say the high will land.</p><br>
+            <p><strong style="color:var(--br)">Step 2:</strong> Go to <a href="${d.polymarket_url||d.polymarket_search_url}" target="_blank">Polymarket ↗</a> and check the YES% for that bracket.</p><br>
+            <p><strong style="color:var(--sun)">The edge opportunity:</strong> If Polymarket shows the predicted bracket at a <em>lower</em> probability than our forecast, that's underpriced — buy YES.</p><br>
+            <p><strong style="color:var(--green)">Best window:</strong> On the day, between <strong>10am–12pm local</strong> when the heating rate is established but market hasn't updated yet. Check the Live Conditions above.</p><br>
+            <p><strong style="color:var(--sky)">Gap signal:</strong> ${d.source_gap_direction==='models_higher'?`⚡ <strong style="color:var(--green)">Models forecast ${f1(d.source_gap)}${d.unit_symbol} HIGHER than Wunderground</strong> — traders anchored to WU are underpricing higher brackets right now.`:d.source_gap_direction==='wu_higher'?`⚠ WU reading is ${f1(Math.abs(d.source_gap||0))}${d.unit_symbol} above model consensus — models may correct downward.`:'Models and WU are in agreement — no gap signal.'}</p>
+          </div>
+        </div>
+
+        <!-- Bracket probability map — the canonical version with IDs is in the Edge tab -->
+        <div class="card">
+          <div class="ch"><div class="ct">📊 Bracket Probability Map</div>
+            <a class="pm-link" style="margin-left:auto;font-size:11px" href="${d.polymarket_url||d.polymarket_search_url||'#'}" target="_blank">Open Polymarket ↗</a>
+          </div>
+          <div class="cb">
+            <div style="font-size:10px;color:var(--t);margin-bottom:8px">
+              Centered on: <strong style="color:var(--sky)">${d.wu_peak!=null?f1(d.wu_peak):f1(d.consensus_peak)}${sym}</strong>
+              <span style="margin-left:8px;font-size:9px;color:var(--t)">→ Open Edge Calculator tab to see live PM brackets</span>
+            </div>
+            <div class="blist" id="predictor-blist">${renderBracketRows(d.brackets||[], d.consensus_peak, sym, null, d.wu_peak, d.wu_is_realtime)}</div>
+          </div>
+        </div>
+          </div>
+        </div>
+
+        <!-- Resolution -->
+        <div class="rtip">
+          <strong>⚠ Resolution:</strong> Resolves on <strong>${d.station}</strong> via
+          <a href="${d.wunderground}/date/${d.date}" target="_blank">Weather Underground ↗</a>.
+          Whole degrees ${d.unit_symbol} only. Always verify the exact station reading.
+          ${d.note?`<br><span style="color:var(--sun)">⚠ ${d.note}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── RENDER FORECAST TAB ────────────────────────────────────────────────────
+function renderForecast(d){
+  const sym=d.unit_symbol;
+  const peak=d.consensus_peak;
+  const confColor=d.confidence>=80?'var(--green)':d.confidence>=60?'var(--sun)':'var(--red)';
+  const wuUrl=`${d.wunderground}/date/${d.date}`;
+
+  // Gap alert
+  let gapHtml='';
+  const isIntraday = !d.day_is_over && d.wu_available && d.wu_is_realtime;
+  if(d.source_gap_direction==='models_higher'){
+    const wuLabel = isIntraday
+      ? `WU current floor <strong style="color:var(--wu)">${f1(d.wu_peak)}${sym}</strong> (will rise)`
+      : `WU high <strong style="color:var(--wu)">${f1(d.wu_peak)}${sym}</strong>`;
+    gapHtml=`<div class="edge-alert ea-strong"><div class="ea-t" style="color:var(--green)">🎯 Edge: Models ${f1(d.source_gap)}${sym} Above ${isIntraday?'Current WU':'WU Final'}</div>
+      <div class="ea-b">${wuLabel} — models forecast <strong style="color:var(--green)">${f1(peak)}${sym}</strong> final. ${isIntraday?'<strong>Higher brackets underpriced while temperature is still rising.</strong>':'<strong>Traders anchored to WU are underpricing higher brackets.'}</strong></div></div>`;
+  } else if(d.source_gap_direction==='wu_higher'){
+    gapHtml=`<div class="edge-alert ea-warn"><div class="ea-t" style="color:var(--sun)">⚠ Reverse Gap: WU ${f1(Math.abs(d.source_gap||0))}${sym} Above Models</div>
+      <div class="ea-b">WU shows <strong style="color:var(--wu)">${f1(d.wu_peak)}${sym}</strong> but models say <strong style="color:var(--sky)">${f1(peak)}${sym}</strong>. Consider buying lower brackets.</div></div>`;
+  }
+
+  const wuMethodStr = d.wu_available ? (d.wu_method || 'API') : 'no data yet';
+  const wuStatus = d.wu_available
+    ? (d.wu_cross_check === 'underreported'
+        ? `<span style="font-size:10px;color:var(--red)">⚠ IEM may have missed peak — models show higher reading. <button onclick="refreshWU('${d.city}','${d.date}')" style="background:none;border:1px solid var(--b2);border-radius:3px;color:var(--sky);cursor:pointer;font-size:9px;font-family:var(--mono);padding:1px 5px">↺ Retry</button></span>`
+        : (d.wu_is_realtime
+            ? `<span style="font-size:10px;color:var(--green)">✓ ${wuMethodStr}</span>`
+            : `<span style="font-size:10px;color:var(--sun)">⚠ ERA5 estimate — live station data not yet available <button onclick="refreshWU('${d.city}','${d.date}')" style="background:none;border:1px solid var(--b2);border-radius:3px;color:var(--sky);cursor:pointer;font-size:9px;font-family:var(--mono);padding:1px 5px">↺ Check</button></span>`))
+    : `<span style="font-size:10px;color:var(--sun)">⏳ Station data not yet received — market still open <button onclick="refreshWU('${d.city}','${d.date}')" style="background:none;border:none;color:var(--sky);cursor:pointer;font-size:10px;font-family:var(--mono)">↺ Retry</button></span>`;
+  const wuUpdated = d.wu_last_updated
+    ? `<div style="font-size:9px;color:var(--t);margin-top:1px">Updated: ${(d.wu_last_updated||'').slice(11,16)||'—'}</div>` : '';
+
+  const urls = d.source_urls || {};
+  const srcRows=[
+    {n:'Wunderground',   c:'var(--wu)',    badge:'primary-src', bl:'RESOLUTION', pk:d.wu_peak,   lo:d.wu_low,  link:wuUrl,              extra:wuStatus+wuUpdated, peakId:'wu-peak-cell', lowId:'wu-low-cell'},
+    {n:'Open-Meteo',     c:'var(--sky)',   badge:'model-src',   bl:'ECMWF/GFS',  pk:d.om_peak,                 link:urls.om||'https://open-meteo.com'},
+    {n:'NWS Official',   c:'var(--green)', badge:'model-src',   bl: d.nws_source==='official daily high' ? 'OFFICIAL HIGH' : 'US OFFICIAL', pk:d.nws_peak, link:urls.nws||null, show: !!d.nws_peak},
+    {n:'Visual Crossing',c:'var(--vc)',    badge:'model-src',   bl:'MODEL',      pk:d.vc_peak,                 link:urls.vc||'https://visualcrossing.com'},
+    {n: d.intl_source||'Intl Model', c:'var(--pm)', badge:'model-src', bl:'REGIONAL', pk:d.intl_peak, link:d.intl_source_url||null, show: !!d.intl_peak},
+  ].filter(s=>(s.pk!=null||s.n==='Wunderground')&&(s.show!==false)).map(s=>{
+    const gv=d.wu_peak!=null&&s.pk!=null&&s.n!=='Wunderground'?Math.round((s.pk-d.wu_peak)*10)/10:null;
+    const peakHtml = s.n==='Wunderground'
+      ? (s.pk!=null
+          ? `<strong id="${s.peakId}" style="color:var(--wu);font-family:var(--display)">${f1(s.pk)}${sym}</strong>`
+          : `<span id="${s.peakId}" style="color:var(--sun);font-size:11px">⟳ fetching... <button onclick="refreshWU('${d.city}','${d.date}')" style="background:none;border:none;color:var(--sky);cursor:pointer;font-size:10px;font-family:var(--mono)">Retry ↺</button></span>`)
+      : `<span style="font-weight:700;color:${s.c};font-family:var(--display)">${s.pk!=null?f1(s.pk)+sym:'—'}</span>`;
+    const nameHtml = s.link
+      ? `<a href="${s.link}" target="_blank" style="color:inherit;text-decoration:none">${s.n} <span style="font-size:9px;opacity:.6">↗</span></a>`
+      : s.n;
+    return `<tr>
+      <td>
+        <div class="src-name"><div class="scdot" style="background:${s.c}"></div>${nameHtml}</div>
+        <span class="src-badge ${s.badge}">${s.bl}</span>
+        ${s.extra||''}
+        ${s.n==='Wunderground'?`<span id="wu-method-el" style="display:none"></span>`:''}
+      </td>
+      <td>${peakHtml}</td>
+      <td id="${s.n==='Wunderground'?'wu-low-cell':''}">${s.lo!=null?f1(s.lo)+sym:'—'}</td>
+      <td>${gv!=null?`<span class="${gv>0?'gap-up':'gap-dn'}">${gv>0?'+':''}${gv}${sym}</span>`:''}</td>
+    </tr>`;
+  }).join('');
+
+  const cnotes=[];
+  if(d.days_out<=1) cnotes.push({c:'var(--green)',t:'Same/next-day — very high accuracy'});
+  else if(d.days_out<=3) cnotes.push({c:'var(--sun)',t:`${d.days_out}-day — good, monitor updates`});
+  else cnotes.push({c:'var(--red)',t:`${d.days_out}-day — lower accuracy`});
+  if(d.model_agreement===true) cnotes.push({c:'var(--green)',t:`Models agree within ${d.model_spread}${sym}`});
+  else if(d.model_agreement===false) cnotes.push({c:'var(--red)',t:`Models disagree by ${d.model_spread}${sym}`});
+  if(d.precip_risk>50) cnotes.push({c:'var(--red)',t:`High precip risk ${d.precip_risk}%`});
+  else if(d.precip_risk>20) cnotes.push({c:'var(--sun)',t:`Moderate precip ${d.precip_risk}%`});
+  else cnotes.push({c:'var(--green)',t:'Low precip — clear conditions'});
+  // METAR/SIGMET alerts in cnotes
+  if(d.sigmet_active) cnotes.push({c:'var(--red)',t:'⚡ Convective SIGMET — thunderstorm activity nearby'});
+  if(d.metar_sky_code) {
+    const skyColors={'CLR':'var(--green)','SKC':'var(--green)','CAVOK':'var(--green)',
+                     'FEW':'var(--green)','SCT':'var(--sun)','BKN':'var(--sun)','OVC':'var(--red)','OVX':'var(--red)'};
+    cnotes.push({c:skyColors[d.metar_sky_code]||'var(--t)',t:`METAR sky: ${d.metar_sky_code} (live station report)`});
+  }
+  if((d.aviation_corrections||[]).length>0) {
+    const netCorr = d.aviation_temp_correction||0;
+    cnotes.push({c:netCorr>0?'var(--green)':netCorr<0?'var(--red)':'var(--t)',
+      t:`Aviation correction: ${netCorr>0?'+':''}${netCorr}${sym} net adjustment`});
+  }
+
+  // Build aviation corrections HTML block
+  const aviCorrs = d.aviation_corrections || [];
+  let aviHtml = '';
+  if(aviCorrs.length > 0 || d.taf_peak_temp != null) {
+    const corrRows = aviCorrs.map(c => {
+      const col = c.value > 0 ? 'var(--green)' : c.value < 0 ? 'var(--red)' : 'var(--t)';
+      return `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--b)">
+        <div style="flex:1">
+          <div style="font-size:11px;font-weight:600;color:var(--br)">${c.label}</div>
+          <div style="font-size:10px;color:var(--t2)">${c.reason}</div>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:${col};margin-left:10px;white-space:nowrap">${c.value>0?'+':''}${c.value}${sym}</div>
+      </div>`;
+    }).join('');
+
+    const netCorr = d.aviation_temp_correction || 0;
+    const netCol  = netCorr > 0 ? 'var(--green)' : netCorr < 0 ? 'var(--red)' : 'var(--t)';
+    const tafRow  = d.taf_peak_temp != null
+      ? `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--b)">
+           <div style="font-size:11px;font-weight:600;color:var(--br)">✈ TAF Max Temp (TX line)</div>
+           <div style="font-size:13px;font-weight:700;color:var(--pm)">${d.taf_peak_temp.toFixed(1)}${sym}</div>
+         </div>` : '';
+
+    const srcPills = [
+      d.metar_available ? `<span style="font-size:9px;padding:1px 6px;border-radius:10px;background:rgba(52,211,153,.15);color:var(--green);border:1px solid rgba(52,211,153,.3)">METAR</span>` : '',
+      d.taf_available   ? `<span style="font-size:9px;padding:1px 6px;border-radius:10px;background:rgba(56,189,248,.15);color:var(--sky);border:1px solid rgba(56,189,248,.3)">TAF</span>` : '',
+      d.sigmet_available? `<span style="font-size:9px;padding:1px 6px;border-radius:10px;background:${d.sigmet_active?'rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.3)':'rgba(255,255,255,.06);color:var(--t);border:1px solid var(--b)'}">${d.sigmet_active?'⚡ SIGMET':'SIGMET ✓'}</span>` : '',
+    ].filter(Boolean).join(' ');
+
+    aviHtml = `<div class="card" style="margin-top:13px">
+      <div class="ch">
+        <div class="ct">✈ Aviation Atmospheric Data</div>
+        <div style="display:flex;gap:5px;align-items:center">${srcPills}</div>
+      </div>
+      <div class="cb">
+        ${aviCorrs.length === 0 && d.taf_peak_temp == null
+          ? `<div style="font-size:11px;color:var(--t2);text-align:center;padding:8px 0">No atmospheric corrections — conditions nominal</div>`
+          : `${tafRow}${corrRows}
+             <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;margin-top:2px">
+               <div style="font-size:11px;font-weight:700;color:var(--br)">Net temperature correction</div>
+               <div style="font-size:15px;font-weight:800;font-family:var(--display);color:${netCol}">${netCorr>0?'+':''}${netCorr}${sym}</div>
+             </div>`
+        }
+        ${d.metar_raw ? `<div style="font-size:9px;color:var(--t);margin-top:6px;font-family:monospace;background:var(--c2);padding:5px 7px;border-radius:5px;border:1px solid var(--b);overflow:auto">${d.metar_raw}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  const hourlyHtml=(d.om_hourly||[]).filter((_,i)=>i%2===0).map(h=>{
+    const isPeak=h.temp&&peak&&Math.abs(h.temp-peak)<1;
+    return `<div class="hchip ${isPeak?'peak':''}"><div class="htime">${h.hour}</div><div class="htemp">${h.temp!=null?Math.round(h.temp)+'°':'—'}</div><div class="hprecip">${h.precip_prob>10?h.precip_prob+'%💧':''}</div></div>`;
+  }).join('');
+
+  document.getElementById('fc-content').innerHTML=`
+    ${gapHtml}
+    <div class="g2">
+      <div style="display:flex;flex-direction:column;gap:13px">
+        <div class="card">
+          <div class="ch"><div class="ct">${d.flag} ${d.city}</div>
+            <span class="badge" style="background:var(--skyg);color:var(--sky);border:1px solid rgba(56,189,248,.2)">${d.days_out===0?'Today':d.days_out===1?'Tomorrow':`In ${d.days_out}d`}</span>
+            <span class="badge" style="background:rgba(255,255,255,.04);color:var(--t);border:1px solid var(--b);margin-left:auto">${d.station}</span>
+          </div>
+          <div class="cb">
+            <div class="g4" style="margin-bottom:13px">
+              <div class="sumcell" id="wu-top-cell"><div class="scl">WU High</div>
+              ${d.wu_peak!=null
+                ? `<div class="scv" style="color:var(--wu)">${Math.round(d.wu_peak)}${sym}</div>
+                   <div class="scs">${d.wu_is_realtime ? (d.wu_method||'resolution source') : '⚠ ERA5 estimate — live data pending'}</div>`
+                : `<div class="scv" style="color:var(--t);font-size:12px">No data yet</div>
+                   <div class="scs" style="color:var(--sun)">Station hasn't reported</div>`
+              }</div>
+              <div class="sumcell"><div class="scl">Open-Meteo</div><div class="scv" style="color:var(--sky)">${d.om_peak!=null?f1(d.om_peak)+sym:'—'}</div><div class="scs">ECMWF/GFS</div></div>
+              <div class="sumcell"><div class="scl">NWS</div><div class="scv" style="color:var(--green)">${d.nws_peak!=null?f1(d.nws_peak)+sym:'N/A'}</div><div class="scs">US only</div></div>
+              <div class="sumcell"><div class="scl">Visual Crossing</div><div class="scv" style="color:var(--vc)">${d.vc_peak!=null?f1(d.vc_peak)+sym:'—'}</div><div class="scs">backup model</div></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:9px;color:var(--t);text-transform:uppercase;letter-spacing:.1em">Confidence</span>
+              <span style="font-family:var(--display);font-size:15px;font-weight:700;color:${confColor}">${d.confidence}%</span>
+            </div>
+            <div class="confbar"><div class="confbarfill" style="width:${d.confidence}%;background:${confColor}"></div></div>
+            <div class="cnotes">${cnotes.map(n=>`<div class="cnote"><div class="cdot" style="background:${n.c}"></div><span style="font-size:11px;color:var(--t2)">${n.t}</span></div>`).join('')}</div>
+            <div class="g3" style="margin-top:11px">
+              ${[['Precip',d.precip_risk+'%',d.precip_risk>50?'⚠ High':d.precip_risk>20?'~ Mod':'✓ Low',d.precip_risk>50?'var(--red)':d.precip_risk>20?'var(--sun)':'var(--green)'],
+                 ['Max Wind',d.wind_max+' mph',d.wind_max>25?'⚠ Gusty':d.wind_max>15?'~ Breezy':'✓ Calm',d.wind_max>25?'var(--red)':d.wind_max>15?'var(--sun)':'var(--green)'],
+                 ['Range',(d.daily_min!=null?Math.round(d.daily_min):'—')+'–'+(d.daily_max!=null?Math.round(d.daily_max):'—')+sym,'min–max','var(--t)']].map(([l,v,s,c])=>
+                `<div style="background:var(--c2);border:1px solid var(--b);border-radius:7px;padding:8px 11px">
+                  <div style="font-size:9px;color:var(--t);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">${l}</div>
+                  <div style="font-size:13px;font-weight:700;color:var(--br);font-family:var(--display)">${v}</div>
+                  <div style="font-size:10px;color:${c}">${s}</div>
+                </div>`).join('')}
+            </div>
+          </div>
+        </div>
+        ${aviHtml}
+        <div class="card">
+          <div class="ch"><div class="ct">🌡 Temperature All Sources</div>
+            <div class="src-legend">
+              <span class="leg"><div class="ldot" style="background:var(--wu)"></div>WU</span>
+              <span class="leg"><div class="ldot" style="background:var(--sky)"></div>OM</span>
+              ${d.nws_peak?'<span class="leg"><div class="ldot" style="background:var(--green)"></div>NWS</span>':''}
+              ${d.vc_peak?'<span class="leg"><div class="ldot" style="background:var(--vc)"></div>VC</span>':''}
+              ${d.intl_peak?`<span class="leg"><div class="ldot" style="background:var(--pm)"></div>${(d.intl_source||'Intl').split(' ')[0]}</span>`:''}
+            </div>
+          </div>
+          <div class="cb">
+            <div class="chart-wrap"><canvas id="tempChart"></canvas></div>
+            <div class="chart-sub"><canvas id="precipChart"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ct">🕐 Hourly (Open-Meteo)</div></div>
+          <div class="cb"><div class="hscroll"><div class="hrow">${hourlyHtml}</div></div></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:13px">
+        <div class="card">
+          <div class="ch"><div class="ct">📋 Source Comparison</div>
+          <button onclick="refreshWU('${d.city}','${d.date}')" style="margin-left:auto;background:none;border:1px solid var(--b2);color:var(--sky);cursor:pointer;font-size:10px;font-family:var(--mono);padding:3px 9px;border-radius:5px">↺ Refresh WU</button>
+        </div>
+          <div class="cb" style="padding:0"><table class="src-table">
+            <thead><tr><th>Source</th><th>Peak</th><th>Low</th><th>vs WU</th></tr></thead>
+            <tbody>${srcRows}</tbody>
+          </table></div>
+        </div>
+        <div class="card" id="bracket-card">
+          <div class="ch">
+            <div class="ct">📊 Bracket Probabilities</div>
+            <span id="pm-live-badge" style="display:none" class="badge" style="background:var(--pmg);color:var(--pm);border:1px solid rgba(99,102,241,.3);font-size:9px">● LIVE</span>
+            <button id="pm-load-btn" onclick="loadPMLive()" style="margin-left:auto;background:var(--pmg);border:1px solid rgba(99,102,241,.3);color:var(--pm);cursor:pointer;font-size:10px;font-family:var(--mono);padding:3px 10px;border-radius:5px;font-weight:600">⚡ Load Live PM Odds</button>
+          </div>
+          <div class="cb" style="padding:10px 14px">
+            <div style="font-size:10px;color:var(--t2);margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span>Centered on: <strong style="color:var(--sun)">${peak!=null?f1(peak)+sym:'—'}</strong></span>
+              <span id="pm-live-status" style="color:var(--t);font-size:10px"></span>
+            </div>
+            ${!d.wu_available ? `
+            <div style="background:var(--sung);border:1px solid rgba(251,191,36,.25);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-size:10px;color:var(--sun);display:flex;align-items:center;gap:8px">
+              <span>⏳</span>
+              <span><strong>WU station data not yet received.</strong> Brackets are based on model forecasts only — probabilities will sharpen once the station reports. <button onclick="refreshWU('${d.city}','${d.date}')" style="background:none;border:1px solid var(--sun);border-radius:3px;color:var(--sun);cursor:pointer;font-size:9px;font-family:var(--mono);padding:1px 6px;margin-left:4px">↺ Check now</button></span>
+            </div>` : (d.wu_cross_check === 'underreported' ? `
+            <div style="background:var(--redg);border:1px solid rgba(248,113,113,.3);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-size:10px;color:var(--red);display:flex;align-items:center;gap:8px">
+              <span>🔴</span>
+              <span><strong>Station data may be incomplete.</strong> WU shows ${d.wu_peak}${sym} but models indicate ${d.wu_peak_effective}${sym}. Using model-adjusted value for brackets. WU chart may show a higher reading — check the WU link above. <button onclick="refreshWU('${d.city}','${d.date}')" style="background:none;border:1px solid var(--red);border-radius:3px;color:var(--red);cursor:pointer;font-size:9px;font-family:var(--mono);padding:1px 6px;margin-left:4px">↺ Retry WU</button></span>
+            </div>` : (!d.wu_is_realtime ? `
+            <div style="background:var(--sung);border:1px solid rgba(251,191,36,.25);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-size:10px;color:var(--sun);display:flex;align-items:center;gap:8px">
+              <span>⚠️</span>
+              <span><strong>WU showing ERA5 estimate</strong> (not live station data). Brackets are NOT being narrowed by station observations. Market still open. <button onclick="refreshWU('${d.city}','${d.date}')" style="background:none;border:1px solid var(--sun);border-radius:3px;color:var(--sun);cursor:pointer;font-size:9px;font-family:var(--mono);padding:1px 6px;margin-left:4px">↺ Check now</button></span>
+            </div>` : ''))}
+            <!-- Column headers -->
+            <div style="display:grid;grid-template-columns:1fr 52px 52px 48px;gap:0;font-size:9px;color:var(--t);text-transform:uppercase;letter-spacing:.06em;padding:0 4px 6px;border-bottom:1px solid var(--b2);margin-bottom:5px">
+              <span>Bracket</span>
+              <span style="text-align:right;padding-right:4px">Forecast</span>
+              <span style="text-align:right;padding-right:4px;color:var(--pm)">PM Live</span>
+              <span style="text-align:right">Edge</span>
+            </div>
+            <div class="blist" id="main-blist">${renderBracketRows(d.brackets||[], peak, sym, null, d.wu_peak, d.wu_is_realtime)}</div>
+            <div id="pm-legend" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--b);display:flex;flex-wrap:wrap;gap:10px;font-size:10px;color:var(--t)">
+              <span><span style="display:inline-block;width:8px;height:3px;background:linear-gradient(90deg,var(--sun),var(--wu));margin-right:4px;vertical-align:middle;border-radius:2px"></span>Our forecast</span>
+              <span><span style="display:inline-block;width:2px;height:10px;background:var(--pm);margin-right:4px;vertical-align:middle"></span>PM odds line</span>
+              <span style="color:var(--green)">+% = underpriced → BUY YES</span>
+              <span style="color:var(--red)">-% = overpriced → avoid/sell</span>
+            </div>
+          </div>
+        </div>
+        <div class="rtip">
+          <strong>⚠ Resolution:</strong> <strong>${d.station}</strong> via <a href="${d.wunderground}/date/${d.date}" target="_blank">Wunderground ↗</a>.
+          Whole degrees ${sym}. ${d.note?`<br><span style="color:var(--sun)">${d.note}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  setTimeout(()=>rebuildCharts(d), 50);
+}
+
+function rebuildCharts(d){
+  const dark=isDark();
+  const gc=dark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.05)';
+  const tc=dark?'#4a5878':'#8fa3c0';
+  const cd=d.chart_data||[];
+  if(tempChart){tempChart.destroy();tempChart=null;}
+  if(precipChart){precipChart.destroy();precipChart=null;}
+  const labels=cd.map(h=>h.hour);
+  const opts={responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{labels:{color:tc,font:{size:10,family:'DM Mono'},boxWidth:10,padding:12},display:true},
+      tooltip:{backgroundColor:dark?'rgba(6,8,16,0.96)':'rgba(255,255,255,0.97)',titleColor:dark?'#dde4f4':'#0a1628',bodyColor:dark?'#7a90b8':'#3a5070',borderColor:dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.08)',borderWidth:1,padding:10}},
+    scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:10,family:'DM Mono'},maxRotation:0,autoSkip:true,maxTicksLimit:12}},
+            y:{grid:{color:gc},ticks:{color:tc,font:{size:10,family:'DM Mono'}}}}};
+  const tc2=document.getElementById('tempChart');
+  if(tc2){
+    const ds=[];
+    // WU actual hourly — primary, shown as thick solid line with dots
+    const wuHourly = d.wu_hourly || [];
+    if(wuHourly.length > 0) {
+      // Align WU hourly to chart label hours
+      const wuByHour = {};
+      wuHourly.forEach(h => { wuByHour[h.hour] = h.temp; });
+      const wuTemps = labels.map(hr => {
+        // Try exact match, then ±30min variants
+        return wuByHour[hr] ?? wuByHour[hr.replace(':00',':30')] ?? wuByHour[hr.replace(':30',':00')] ?? null;
+      });
+      if(wuTemps.some(v=>v!=null)) {
+        ds.push({
+          label:'Wunderground (actual)',
+          data: wuTemps,
+          borderColor:'#fb923c',
+          backgroundColor:'rgba(251,146,60,0.12)',
+          borderWidth:2.5,
+          pointRadius:3,
+          pointBackgroundColor:'#fb923c',
+          tension:0.3,
+          fill:false,
+          spanGaps:true,
+          order:0,  // draw on top
+        });
+      }
+    }
+    // WU high/low as horizontal reference lines (always shown if available)
+    if(d.wu_peak) {
+      ds.push({
+        label:`WU High: ${d.wu_peak.toFixed(1)}${d.unit_symbol||'°F'}`,
+        data: labels.map(()=>d.wu_peak),
+        borderColor:'rgba(251,146,60,0.5)',
+        borderWidth:1.5,
+        borderDash:[6,4],
+        pointRadius:0,
+        tension:0,
+        fill:false,
+        spanGaps:true,
+        order:5,
+      });
+    }
+    if(cd.some(h=>h.om!=null)) ds.push({label:'Open-Meteo (ECMWF)',data:cd.map(h=>h.om),borderColor:'#38bdf8',backgroundColor:'rgba(56,189,248,0.05)',borderWidth:2,pointRadius:0,tension:0.4,fill:true,spanGaps:true,order:1});
+    if(cd.some(h=>h.nws!=null)) ds.push({label:'NWS Official',data:cd.map(h=>h.nws),borderColor:'#34d399',borderWidth:1.5,pointRadius:0,tension:0.4,fill:false,spanGaps:true,borderDash:[4,2],order:2});
+    if(cd.some(h=>h.vc!=null)) ds.push({label:'Visual Crossing',data:cd.map(h=>h.vc),borderColor:'#a78bfa',borderWidth:1.5,pointRadius:0,tension:0.4,fill:false,spanGaps:true,borderDash:[6,3],order:3});
+    if(cd.some(h=>h.intl!=null)) ds.push({label:d.intl_source||'Intl Model',data:cd.map(h=>h.intl),borderColor:'#6366f1',borderWidth:1.5,pointRadius:0,tension:0.4,fill:false,spanGaps:true,borderDash:[3,2],order:4});
+    tempChart=new Chart(tc2,{type:'line',data:{labels,datasets:ds},options:{...opts}});
+  }
+  const pc=document.getElementById('precipChart');
+  if(pc){
+    precipChart=new Chart(pc,{type:'bar',data:{labels,datasets:[
+      {label:'Precip%',data:cd.map(h=>h.precip||0),backgroundColor:'rgba(56,189,248,0.35)',yAxisID:'y',borderRadius:2},
+      {label:'Wind mph',data:cd.map(h=>h.wind||0),type:'line',borderColor:'rgba(251,191,36,0.7)',backgroundColor:'transparent',borderWidth:1.5,pointRadius:0,tension:0.4,yAxisID:'y2',spanGaps:true},
+    ]},options:{...opts,plugins:{...opts.plugins,legend:{display:false}},scales:{x:{...opts.scales.x},y:{...opts.scales.y,max:100,title:{display:true,text:'Precip %',color:tc,font:{size:9}}},y2:{position:'right',grid:{display:false},ticks:{color:tc,font:{size:9}},title:{display:true,text:'Wind mph',color:tc,font:{size:9}}}}}});
+  }
+}
+
+// ── EDGE TAB ───────────────────────────────────────────────────────────────
+function renderEdgeTab(d){
+  const sym=d.unit_symbol;
+  const pred=d.predictor?.final_prediction;
+  document.getElementById('edge-content').innerHTML=`
+    <div class="g2">
+      <div class="card">
+        <div class="ch">
+          <div class="ct">⚡ Enter Polymarket YES%</div>
+          <a class="pm-link" style="margin-left:auto;font-size:11px" href="${d.polymarket_url||d.polymarket_search_url||'#'}" target="_blank">Open Polymarket ↗</a>
+        </div>
+        <div class="cb">
+          <div style="font-size:11px;color:var(--t2);margin-bottom:11px;line-height:1.7">
+            Predicted high: <strong style="color:var(--sun)">${pred!=null?Math.round(pred)+sym:'—'}</strong> · 
+            Model consensus: <strong style="color:var(--sky)">${d.consensus_peak!=null?f1(d.consensus_peak)+sym:'—'}</strong>
+            ${d.source_gap_direction==='models_higher'?`<br><span style="color:var(--green)">⚡ Models ${f1(d.source_gap)}${sym} above WU — check higher brackets</span>`:''}
+          </div>
+          ${(d.brackets||[]).map(b=>`
+            <div class="pmrow">
+              <span class="pmlabel">${b.label}</span>
+              <input class="pminput" type="number" min="0" max="100" step="1"
+                id="pm-${bk(b.label)}" placeholder="0–100" oninput="computeEdge()">
+              <span style="font-size:11px;color:var(--t)">%</span>
+              <span style="font-size:11px;color:var(--sun);margin-left:auto">Fcst: ${fp(b.forecast_prob)}</span>
+            </div>`).join('')}
+          <button class="btn btn-sky" style="width:100%;margin-top:11px" onclick="computeEdge()">Calculate Edge</button>
+          <div id="edge-summary" style="margin-top:9px"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><div class="ct">📊 Results</div></div>
+        <div class="cb">
+          <div class="blist">${(d.brackets||[]).map(b=>`
+            <div class="brow" id="br2-${bk(b.label)}">
+              <div class="btop"><span class="blabel">${b.label}</span><span class="bfpct">${fp(b.forecast_prob)}</span>
+                <span class="bpmpct" id="pm2d-${bk(b.label)}">PM: —</span></div>
+              <div class="bbar"><div class="bbarfill" style="width:${b.forecast_prob}%"></div></div>
+              <div class="bedge" id="bedge2-${bk(b.label)}"><span class="epill eskip">Enter odds</span></div>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function computeEdge(){
+  if(!D?.brackets) return;
+  const pm={};
+  D.brackets.forEach(b=>{
+    const v=document.getElementById(`pm-${bk(b.label)}`)?.value;
+    if(v!==''&&v!=null) pm[b.label]=parseFloat(v);
+  });
+  const resp=await fetch('/api/edge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({brackets:D.brackets,polymarket_odds:pm})});
+  const data=await resp.json();
+  data.results.forEach(r=>{
+    const k=bk(r.label);
+    ['pm2d-','bpmd-'].forEach(pfx=>{const el=document.getElementById(pfx+k);if(el&&r.polymarket_prob!=null)el.textContent=`PM: ${r.polymarket_prob}%`;});
+    ['bedge2-','bedge-'].forEach(pfx=>{
+      const el=document.getElementById(pfx+k);
+      if(el&&r.edge!=null){
+        const sign=r.edge>0?'+':'';
+        const ecls=r.edge>0?'epos':r.edge<0?'eneg':'eneu';
+        const stars='★'.repeat(r.stars)+'☆'.repeat(3-r.stars);
+        const pill=r.action==='BUY YES'?'<span class="epill eyes">▲ BUY YES</span>':r.action==='BUY NO'?'<span class="epill eno">▼ BUY NO</span>':'<span class="epill eskip">SKIP</span>';
+        el.innerHTML=`${pill}<span class="enum ${ecls}">${sign}${r.edge}% edge</span><span class="stars" style="margin-left:auto">${stars}</span>`;
+      }
+    });
+  });
+  const best=data.results.filter(r=>r.edge!=null&&r.stars>=2).sort((a,b)=>Math.abs(b.edge)-Math.abs(a.edge));
+  const sumEl=document.getElementById('edge-summary');
+  if(best.length){
+    const top=best[0];const isY=top.action==='BUY YES';
+    sumEl.innerHTML=`<div class="sbox ${isY?'sbull':'sbear'}">
+      <div class="sbt" style="color:${isY?'var(--green)':'var(--red)'}">${isY?'▲':'▼'} Best: ${top.label}</div>
+      <div class="sbs">Forecast <strong>${fp(top.forecast_prob)}</strong> · PM <strong>${fp(top.polymarket_prob)}</strong> · Edge <strong>${top.edge>0?'+':''}${top.edge}%</strong> — ${top.action}.
+      ${top.edge>15?'<br>🔥 Strong edge — high conviction.':top.edge>8?'<br>⚡ Moderate — worth a position.':'<br>📊 Weak — small bet only.'}</div>
+    </div>`;
+  } else if(Object.keys(pm).length>0){
+    sumEl.innerHTML=`<div class="sbox sneu"><div class="sbt" style="color:var(--t2)">● No Strong Edge</div><div class="sbs">Odds appear fairly priced.</div></div>`;
+  }
+}
+
+// ── BASKET TAB ─────────────────────────────────────────────────────────────
+function renderBasketTab(d){
+  document.getElementById('basket-content').innerHTML=`
+    <div class="g2">
+      <div style="display:flex;flex-direction:column;gap:13px">
+        <div class="card">
+          <div class="ch">
+            <div class="ct">🎯 Enter Polymarket Prices (cents)</div>
+            <a class="pm-link" style="margin-left:auto;font-size:11px" href="${d.polymarket_url||d.polymarket_search_url||'#'}" target="_blank">Open Polymarket ↗</a>
+          </div>
+          <div class="cb">
+            <div style="font-size:11px;color:var(--t2);margin-bottom:11px;line-height:1.7">
+              Enter YES price in <strong style="color:var(--sky)">cents</strong> (e.g. 28 = 28¢ = 28% YES).
+              The tool finds all combos that cost &lt;$1.00 with positive EV.
+            </div>
+            <div class="bic-grid">${(d.brackets||[]).map(b=>`
+              <div class="bic">
+                <div class="bic-l">${b.label}</div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <input style="width:58px;text-align:center;padding:4px 7px;font-size:12px" type="number" min="1" max="99" id="bic-${bk(b.label)}" placeholder="¢">
+                  <span style="font-size:10px;color:var(--t)">¢</span>
+                </div>
+                <div class="bic-fp">Forecast: ${fp(b.forecast_prob)}</div>
+              </div>`).join('')}
+            </div>
+            <button class="btn btn-sky" style="width:100%;margin-top:13px" onclick="runBasket()">🧺 Find Range Opportunities</button>
+          </div>
+        </div>
+        <div id="uround-section"></div>
+      </div>
+      <div class="card">
+        <div class="ch"><div class="ct">💡 Range Buying Strategy</div></div>
+        <div class="cb" style="font-size:12px;line-height:1.9;color:var(--t2)">
+          <p><strong style="color:var(--br)">Goal:</strong> Buy 2-4 adjacent brackets so whichever resolves YES, you win $1.00 — spending &lt;$1.00 total.</p><br>
+          <p><strong style="color:var(--sun)">Example:</strong><br>
+          Buy 70-71°F @ 12¢ · Buy 72-73°F @ 16¢ · Buy 74-75°F @ 25¢<br>
+          <strong>53¢ total → win $1.00 if any hits = +88% profit</strong></p><br>
+          <p><strong style="color:var(--green)">Best setup:</strong> Models predict a narrow range, you buy those brackets cheap before the market adjusts.</p><br>
+          <p style="color:var(--t)">⭐⭐⭐ = 30%+ EV &nbsp; ⭐⭐ = 15-30% &nbsp; ⭐ = 5-15%</p>
+        </div>
+      </div>
+    </div>
+    <div id="basket-results-wrap" style="display:none">
+      <div class="card">
+        <div class="ch"><div class="ct">🔍 Viable Baskets</div><span class="badge" id="basket-cnt" style="background:var(--skyg);color:var(--sky);border:1px solid rgba(56,189,248,.25)">0</span><span style="font-size:11px;color:var(--t);margin-left:6px">adj first · by EV%</span></div>
+        <div class="cb"><div id="basket-results" style="display:flex;flex-direction:column;gap:6px"></div></div>
+      </div>
+    </div>`;
+}
+
+// ── WU Live Refresh ────────────────────────────────────────────────────────
+let _wuRefreshTimer = null;
+
+async function refreshWU(city, date, silent=false) {
+  if(!city || !date) return;
+  try {
+    // Update UI to show refreshing
+    const peakCell = document.getElementById('wu-peak-cell');
+    const lowCell  = document.getElementById('wu-low-cell');
+    const methodEl = document.getElementById('wu-method-el');
+    const topCell  = document.getElementById('wu-top-cell');
+    if(!silent && peakCell) peakCell.innerHTML = '<span style="color:var(--sun);font-size:11px">⟳ Fetching...</span>';
+
+    const resp = await fetch(`/api/wu_live/${encodeURIComponent(city)}/${date}`);
+    const wu = await resp.json();
+    const sym = wu.unit_symbol || (D?.unit_symbol || '°F');
+
+    if(wu.wu_available) {
+      // Update D so re-renders use fresh data
+      if(D) {
+        D.wu_peak      = wu.wu_peak;
+        D.wu_low       = wu.wu_low;
+        D.wu_avg       = wu.wu_avg;
+        D.wu_available = true;
+        D.wu_method    = wu.wu_method;
+        D.wu_last_updated = wu.wu_last_updated;
+        D.wu_hourly    = wu.wu_hourly || [];
+      // Update brackets: ONLY use wu.brackets if PM brackets are NOT already loaded.
+      // If PM brackets are loaded, just update wu_peak in D and re-render with PM brackets.
+      if(D.pm_loaded && D.brackets && D.brackets[0]?.pm_yes_price != null) {
+        // PM brackets are the source of truth — recompute forecast_prob on them
+        // with the updated wu_peak as distribution center, then re-render
+        const center = wu.wu_peak ?? D.consensus_peak ?? 0;
+        const sigma  = D.predictor?.uncertainty ?? 2.5;
+        try {
+          const pmResp = await fetch(
+            `/api/pm_odds/${encodeURIComponent(city)}/${date}?center=${center}&sigma=${sigma}`
+          );
+          if(pmResp.ok) {
+            const pmData = await pmResp.json();
+            if(pmData.ok && pmData.brackets?.length > 0) {
+              D.brackets = pmData.brackets;
+              _applyPMBracketsToUI(pmData.brackets, pmData.total_volume||0, pmData.market_count||pmData.brackets.length);
+            } else {
+              // PM re-fetch failed — just re-render with existing PM brackets + new wu_peak
+              _applyPMBracketsToUI(D.brackets, D.pm_total_volume||0, D.brackets.length);
+            }
+          } else {
+            _applyPMBracketsToUI(D.brackets, D.pm_total_volume||0, D.brackets.length);
+          }
+        } catch(e) {
+          _applyPMBracketsToUI(D.brackets, D.pm_total_volume||0, D.brackets.length);
+        }
+      } else if(wu.brackets && wu.brackets.length > 0) {
+        // PM not loaded yet — use WU-generated brackets as fallback
+        D.brackets = wu.brackets;
+        const listEl = document.getElementById('main-blist');
+        if(listEl) listEl.innerHTML = renderBracketRows(wu.brackets, D.consensus_peak, D.unit_symbol, null, wu.wu_peak, wu.wu_is_realtime);
+        const predListEl = document.getElementById('predictor-blist');
+        if(predListEl) predListEl.innerHTML = renderBracketRows(wu.brackets, D.consensus_peak, D.unit_symbol, null, wu.wu_peak, wu.wu_is_realtime);
+      }
+        // Recalculate source gap
+        if(D.consensus_peak && wu.wu_peak) {
+          const gap = Math.round((D.consensus_peak - wu.wu_peak)*10)/10;
+          D.source_gap = gap;
+          D.source_gap_direction = Math.abs(gap) >= (D.unit==='celsius'?1:2)
+            ? (gap > 0 ? 'models_higher' : 'wu_higher') : null;
+        }
+      }
+
+      // Patch the source table cells directly
+      if(peakCell) peakCell.innerHTML = `<strong style="color:var(--wu);font-family:var(--display)">${wu.wu_peak!=null ? wu.wu_peak.toFixed(1)+sym : '—'}</strong>`;
+      if(lowCell)  lowCell.innerHTML  = wu.wu_low  != null ? wu.wu_low.toFixed(1)+sym  : '—';
+      if(methodEl) methodEl.textContent = wu.wu_method || '';
+
+      // Update the top summary WU cell
+      if(topCell) topCell.innerHTML = `
+        <div class="scl">WU High</div>
+        <div class="scv" style="color:var(--wu)">${wu.wu_peak!=null ? Math.round(wu.wu_peak)+sym : '—'}</div>
+        <div class="scs">${wu.wu_method ? wu.wu_method.split(' ')[0] : 'resolution source'}</div>`;
+
+      // Also patch the predictor tab WU row
+      const predWuEl = document.getElementById('pred-wu-cell');
+      if(predWuEl && wu.wu_peak != null)
+        predWuEl.textContent = Math.round(wu.wu_peak)+sym;
+
+      // Rebuild chart with real WU hourly line
+      if(tempChart && D) rebuildCharts(D);
+
+      if(!silent) console.log(`WU refreshed: ${wu.wu_peak}${sym} via ${wu.wu_method}`);
+    } else {
+      if(peakCell) peakCell.innerHTML = `<span style="color:var(--sun);font-size:11px">No data <button onclick="refreshWU('${city}','${date}')" style="background:none;border:none;color:var(--sky);cursor:pointer;font-size:10px;font-family:var(--mono)">Retry ↺</button></span>`;
+    }
+  } catch(e) {
+    console.warn('WU refresh failed:', e);
+  }
+}
+
+function startWUAutoRefresh(city, date) {
+  // Clear any existing timer
+  if(_wuRefreshTimer) clearInterval(_wuRefreshTimer);
+  // Only auto-refresh if it's today
+  const todayStr = new Date().toISOString().slice(0,10);
+  if(date !== todayStr) return;
+  // Refresh immediately, then every 5 minutes
+  refreshWU(city, date, true);
+  _wuRefreshTimer = setInterval(() => refreshWU(city, date, true), 5 * 60 * 1000);
+  console.log('WU auto-refresh started (every 5 min)');
+}
+
+async function runBasket(){
+  if(!D?.brackets) return;
+  const brackets=D.brackets.map(b=>{
+    const v=document.getElementById(`bic-${bk(b.label)}`)?.value;
+    return{label:b.label,forecast_prob:b.forecast_prob,price_cents:(v!==''&&v!=null)?parseFloat(v):null};
+  });
+  if(brackets.filter(b=>b.price_cents!=null).length<2){alert('Enter prices for at least 2 brackets');return;}
+  const resp=await fetch('/api/basket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({brackets})});
+  const data=await resp.json();
+  if(data.error){alert(data.error);return;}
+  const urEl=document.getElementById('uround-section');
+  urEl.innerHTML=data.underround?
+    `<div class="uround"><div style="font-size:22px">🎯</div><div style="font-size:12px;line-height:1.7;color:var(--t2)"><strong>Underround Detected!</strong> All brackets sum to <strong>${(data.total_market_cost*100).toFixed(1)}¢</strong>. Buy ALL → guaranteed $1.00 = free <strong style="color:var(--green)">+${((1-data.total_market_cost)*100).toFixed(1)}¢</strong>.</div></div>`:
+    `<div class="rtip">Total market: <strong>${(data.total_market_cost*100).toFixed(1)}¢</strong> — ${data.total_market_cost>=1?'Overround (normal)':'Near fair value'}.</div>`;
+  const baskets=data.baskets||[];
+  document.getElementById('basket-cnt').textContent=baskets.length+' found';
+  document.getElementById('basket-results-wrap').style.display=baskets.length?'block':'none';
+  const rc=s=>s===3?'bc-s3':s===2?'bc-s2':'bc-s1';
+  const cc=s=>s===3?'s3':s===2?'s2':'';
+  document.getElementById('basket-results').innerHTML=baskets.map(b=>`
+    <div class="bcard ${cc(b.stars)}">
+      <div class="bctop"><span class="bc-r ${rc(b.stars)}">${b.rating}</span>${b.is_adjacent?'<span class="bc-adj">Adjacent ✓</span>':''}<div class="bc-tags">${b.brackets.map(l=>`<span class="bc-tag">${l}</span>`).join('')}</div></div>
+      <div class="bc-stats">
+        <div class="bc-stat"><div class="bc-sl">Cost</div><div class="bc-sv">${b.total_cost_cents}¢</div></div>
+        <div class="bc-stat"><div class="bc-sl">Win</div><div class="bc-sv" style="color:var(--green)">100¢</div></div>
+        <div class="bc-stat"><div class="bc-sl">Win Prob</div><div class="bc-sv" style="color:var(--sun)">${b.win_prob}%</div></div>
+        <div class="bc-stat"><div class="bc-sl">EV%</div><div class="bc-sv" style="color:${b.ev_pct>=15?'var(--green)':'var(--sky)'}">+${b.ev_pct}%</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--t2);margin-top:6px">Profit if win: <strong style="color:var(--green)">+${(b.profit_if_win*100).toFixed(0)}¢</strong> · EV: <strong style="color:var(--sky)">+${(b.ev*100).toFixed(1)}¢</strong> · ${b.bracket_details.map(x=>`${x.label}@${x.price_cents}¢`).join(' + ')}</div>
+    </div>`).join('');
+}
+</script>
+<div style="position:fixed;bottom:0;left:0;right:0;z-index:999;background:rgba(20,20,20,0.85);backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,0.08);padding:7px 18px;display:flex;align-items:center;justify-content:center;gap:8px">
+  <span style="font-size:11px;color:rgba(255,255,255,0.35)">⚠</span>
+  <span style="font-size:11px;color:rgba(255,255,255,0.35);font-family:var(--mono)">Weather Edge provides data-driven forecasts for informational purposes only. Not financial advice. Trade at your own risk.</span>
+</div>
+</body>
+</html>
