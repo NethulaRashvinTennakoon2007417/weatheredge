@@ -137,6 +137,19 @@ CITY_COORDS = {
         "coastal": False,   # inland from Río de la Plata enough to have full swing
         "elev_m": 26,
     },
+    "Shenzhen": {
+        "lat": 22.6395, "lon": 113.8108, "station": "ZGSZ",
+        "tz": "Asia/Shanghai", "unit": "celsius",
+        "wunderground": "https://www.wunderground.com/history/daily/cn/shenzhen/ZGSZ",
+        "flag": "🇨🇳", "volume": "very high",
+        "note": "Shenzhen Bao'an International Airport (ZGSZ)",
+        "pm_city_slug": "shenzhen",
+        "intl_source": "open-meteo-cma",   # CMA model — Chinese national model, best for S.China
+        "climate": "tropical",              # subtropical/tropical: humid, peaks earlier, dampened range
+        "urban": True,
+        "coastal": True,    # Pearl River Delta coast, sea breeze significant
+        "elev_m": 4,
+    },
 }
 
 # ── Polymarket URL Builder ─────────────────────────────────────────────────────
@@ -257,6 +270,38 @@ def fetch_international_source(coords, date_str):
         return fetch_metoffice(lat, lon, date_str, unit)
     elif intl == "metservice":
         return fetch_metservice_nz(lat, lon, date_str, unit)
+    elif intl == "open-meteo-cma":
+        # CMA (China Meteorological Administration) — best for South China / Pearl River Delta
+        try:
+            resp = requests.get("https://api.open-meteo.com/v1/forecast", params={
+                "latitude": lat, "longitude": lon,
+                "hourly": "temperature_2m,precipitation_probability,windspeed_10m",
+                "models": "cma_grapes_global",
+                "temperature_unit": unit,
+                "windspeed_unit": "mph",
+                "forecast_days": 7,
+                "timezone": "auto"
+            }, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                hourly = data.get("hourly", {})
+                times = hourly.get("time", [])
+                temps = hourly.get("temperature_2m", [])
+                day_temps = [temps[i] for i, t in enumerate(times)
+                            if date_str in t and i < len(temps) and temps[i] is not None]
+                if day_temps:
+                    return {
+                        "available": True,
+                        "high_temp": round(max(day_temps), 1),
+                        "source": "CMA GRAPES (China Met Admin)",
+                        "source_url": "https://open-meteo.com",
+                        "hourly": [{"hour": t[11:16], "temp": round(temps[i], 1)}
+                                   for i, t in enumerate(times)
+                                   if date_str in t and i < len(temps) and temps[i] is not None]
+                    }
+        except Exception as e:
+            print(f"CMA GRAPES error: {e}")
+        return {"available": False}
     else:
         # Generic: Open-Meteo with best available regional model
         try:
@@ -332,7 +377,7 @@ def fetch_open_meteo_ensemble(lat, lon, days=3, unit="fahrenheit"):
 
 # ── Multi-Model Intelligence Layer ────────────────────────────────────────────
 
-def fetch_multi_model_peaks(lat, lon, date_str, unit, is_us=True):
+def fetch_multi_model_peaks(lat, lon, date_str, unit, is_us=True, coords=None):
     """
     Fetch peak daily temperature from multiple weather models in parallel.
 
@@ -355,7 +400,21 @@ def fetch_multi_model_peaks(lat, lon, date_str, unit, is_us=True):
         ("GEM",    "gem_seamless"),          # Canadian GEM
         ("MetFR",  "meteofrance_seamless"),  # French AROME/ARPEGE — best for Europe
     ]
-    models = us_models if is_us else intl_models
+    china_models = [
+        ("ECMWF",  "ecmwf_ifs025"),         # Best global model
+        ("ICON",   "icon_seamless"),         # DWD ICON
+        ("CMA",    "cma_grapes_global"),     # China Met Admin — best for S.China/Pearl River Delta
+        ("GEM",    "gem_seamless"),          # Canadian GEM
+    ]
+    # Use China-specific models for Shenzhen
+    coords = coords or {}
+    intl_source = coords.get("intl_source", "") if isinstance(coords, dict) else ""
+    if is_us:
+        models = us_models
+    elif intl_source == "open-meteo-cma":
+        models = china_models
+    else:
+        models = intl_models
 
     def _fetch_one(name_model):
         name, model_id = name_model
@@ -2248,7 +2307,7 @@ def api_weather(city, date):
                             coords.get("station"), unit)
         _f_vc  = _ex.submit(fetch_visual_crossing, coords["lat"], coords["lon"], date, unit)
         _f_mm  = _ex.submit(fetch_multi_model_peaks, coords["lat"], coords["lon"],
-                            date, unit, is_us)
+                            date, unit, is_us, coords=coords)
         _f_eq  = _ex.submit(compute_ensemble_quantiles, coords["lat"], coords["lon"],
                             date, unit)
         _f_intl = (_ex.submit(fetch_international_source, coords, date)
