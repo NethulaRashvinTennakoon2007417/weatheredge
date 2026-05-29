@@ -150,6 +150,19 @@ CITY_COORDS = {
         "coastal": True,    # Pearl River Delta coast, sea breeze significant
         "elev_m": 4,
     },
+    "Warsaw": {
+        "lat": 52.1657, "lon": 20.9671, "station": "EPWA",
+        "tz": "Europe/Warsaw", "unit": "celsius",
+        "wunderground": "https://www.wunderground.com/history/daily/pl/warsaw/EPWA",
+        "flag": "🇵🇱", "volume": "medium",
+        "note": "Warsaw Chopin Airport (EPWA)",
+        "pm_city_slug": "warsaw",
+        "intl_source": "open-meteo",  # intl_models covers Europe well (ECMWF+ICON+MetFR+GEM)
+        "climate": "continental",     # cold winters, warm summers, high diurnal range
+        "urban": True,
+        "coastal": False,
+        "elev_m": 110,
+    },
 }
 
 # ── Polymarket URL Builder ─────────────────────────────────────────────────────
